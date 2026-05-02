@@ -87,6 +87,11 @@ html, body, [class*="css"] {
     .ad-banner-frame {
         padding: 1rem;
     }
+    /* スマホで横長の画像がはみ出ないように */
+    .ad-banner-frame img {
+        max-width: 100%;
+        height: auto;
+    }
 }
 </style>
 """, unsafe_allow_html=True)
@@ -127,13 +132,13 @@ with tab1:
 
     current_kw = st.session_state.get('kw', '米国株式市場')
     
-    # プレミアムバナー 1 (234x60) - HTTPSに修正
+    # プレミアムバナー 1 (468x60) - 新しいバナー
     st.markdown(f"""
     <div class="ad-banner-frame">
         <div class="ad-sub-text">資産形成の必需品は楽天市場でチェック</div>
-        <a href="https://rpx.a8.net/svt/ejp?a8mat=4B3GYD+C0U5KI+2HOM+686ZL&rakuten=y&a8ejpredirect=http%3A%2F%2Fhb.afl.rakuten.co.jp%2Fhgc%2F0ea62065.34400275.0ea62066.204f04c0%2Fa26050208529_4B3GYD_C0U5KI_2HOM_686ZL%3Fpc%3Dhttp%253A%252F%252Fwww.rakuten.co.jp%252F%26m%3Dhttp%253A%252F%252Fm.rakuten.co.jp%252F" rel="nofollow">
-        <img src="https://hbb.afl.rakuten.co.jp/hsb/0eb4bbc0.254a14a3.0eb4bbaa.95151395/" border="0" style="border-radius: 4px;"></a>
-        <img border="0" width="1" height="1" src="https://www18.a8.net/0.gif?a8mat=4B3GYD+C0U5KI+2HOM+686ZL" alt="">
+        <a href="https://rpx.a8.net/svt/ejp?a8mat=4B3GYD+C0U5KI+2HOM+69P01&rakuten=y&a8ejpredirect=http%3A%2F%2Fhb.afl.rakuten.co.jp%2Fhgc%2F0ea62065.34400275.0ea62066.204f04c0%2Fa26050208529_4B3GYD_C0U5KI_2HOM_69P01%3Fpc%3Dhttp%253A%252F%252Fwww.rakuten.co.jp%252F%26m%3Dhttp%253A%252F%252Fm.rakuten.co.jp%252F" rel="nofollow">
+        <img src="https://hbb.afl.rakuten.co.jp/hsb/0eb4bbc7.e9e6f789.0eb4bbaa.95151395/" border="0" style="border-radius: 4px;"></a>
+        <img border="0" width="1" height="1" src="https://www12.a8.net/0.gif?a8mat=4B3GYD+C0U5KI+2HOM+69P01" alt="">
     </div>
     """, unsafe_allow_html=True)
 
@@ -145,7 +150,7 @@ with tab1:
     else:
         for i, entry in enumerate(news[:15]):
             if i > 0 and i % 5 == 0:
-                # プレミアムバナー 2 (120x60) - HTTPSに修正
+                # プレミアムバナー 2 (120x60) - 継続使用
                 st.markdown(f"""
                 <div class="ad-banner-frame" style="background: rgba(30, 33, 40, 0.8); border-color: #30363d; display: flex; align-items: center; justify-content: center; gap: 20px;">
                     <div style="text-align: left;">
@@ -257,12 +262,12 @@ with tab2:
         with c2:
             st.metric("100歳時点の推定資産額", f"{res['finalAssets']:,.2f} 万円")
 
-        # FIRE加速バナー (234x60) - HTTPSに修正
+        # FIRE加速バナー (468x60) - 新しいバナー
         st.markdown(f"""
         <div class="ad-banner-frame" style="border-color: #238636; background: linear-gradient(135deg, #1b4d2a 0%, #0d2b17 100%);">
             <div class="ad-sub-text">FIRE達成への近道を探す</div>
-            <a href="https://rpx.a8.net/svt/ejp?a8mat=4B3GYD+C0U5KI+2HOM+686ZL&rakuten=y&a8ejpredirect=http%3A%2F%2Fhb.afl.rakuten.co.jp%2Fhgc%2F0ea62065.34400275.0ea62066.204f04c0%2Fa26050208529_4B3GYD_C0U5KI_2HOM_686ZL%3Fpc%3Dhttp%253A%252F%252Fwww.rakuten.co.jp%252F%26m%3Dhttp%253A%252F%252Fm.rakuten.co.jp%252F" rel="nofollow">
-            <img src="https://hbb.afl.rakuten.co.jp/hsb/0eb4bbc0.254a14a3.0eb4bbaa.95151395/" border="0" style="border-radius: 4px;"></a>
-            <img border="0" width="1" height="1" src="https://www18.a8.net/0.gif?a8mat=4B3GYD+C0U5KI+2HOM+686ZL" alt="">
+            <a href="https://rpx.a8.net/svt/ejp?a8mat=4B3GYD+C0U5KI+2HOM+69P01&rakuten=y&a8ejpredirect=http%3A%2F%2Fhb.afl.rakuten.co.jp%2Fhgc%2F0ea62065.34400275.0ea62066.204f04c0%2Fa26050208529_4B3GYD_C0U5KI_2HOM_69P01%3Fpc%3Dhttp%253A%252F%252Fwww.rakuten.co.jp%252F%26m%3Dhttp%253A%252F%252Fm.rakuten.co.jp%252F" rel="nofollow">
+            <img src="https://hbb.afl.rakuten.co.jp/hsb/0eb4bbc7.e9e6f789.0eb4bbaa.95151395/" border="0" style="border-radius: 4px;"></a>
+            <img border="0" width="1" height="1" src="https://www12.a8.net/0.gif?a8mat=4B3GYD+C0U5KI+2HOM+69P01" alt="">
         </div>
         """, unsafe_allow_html=True)

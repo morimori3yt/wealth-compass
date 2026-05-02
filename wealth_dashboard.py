@@ -83,14 +83,34 @@ html, body, [class*="css"] {
 @media (max-width: 768px) {
     .stMarkdown h1 {
         font-size: 1.5rem !important;
+        line-height: 1.2 !important;
+        margin-bottom: 0.5rem !important;
+    }
+    .stMarkdown h2 {
+        font-size: 1.2rem !important;
+    }
+    .stMarkdown h3 {
+        font-size: 1.05rem !important;
+    }
+    .news-card {
+        padding: 1.2rem;
+        margin-bottom: 1rem;
+    }
+    .news-title {
+        font-size: 1.15rem;
+        margin-bottom: 0.5rem;
     }
     .ad-banner-frame {
         padding: 1rem;
     }
-    /* スマホで横長の画像がはみ出ないように */
     .ad-banner-frame img {
         max-width: 100%;
         height: auto;
+    }
+    .stTabs [data-baseweb="tab"] {
+        padding-left: 10px !important;
+        padding-right: 10px !important;
+        font-size: 0.9rem !important;
     }
 }
 </style>
@@ -132,7 +152,7 @@ with tab1:
 
     current_kw = st.session_state.get('kw', '米国株式市場')
     
-    # プレミアムバナー 1 (468x60) - 新しいバナー
+    # プレミアムバナー 1 (468x60)
     st.markdown(f"""
     <div class="ad-banner-frame">
         <div class="ad-sub-text">資産形成の必需品は楽天市場でチェック</div>
@@ -150,7 +170,7 @@ with tab1:
     else:
         for i, entry in enumerate(news[:15]):
             if i > 0 and i % 5 == 0:
-                # プレミアムバナー 2 (120x60) - 継続使用
+                # プレミアムバナー 2 (120x60)
                 st.markdown(f"""
                 <div class="ad-banner-frame" style="background: rgba(30, 33, 40, 0.8); border-color: #30363d; display: flex; align-items: center; justify-content: center; gap: 20px;">
                     <div style="text-align: left;">
@@ -199,6 +219,7 @@ with tab2:
         
         st.markdown("**リタイア後の支出・収入**")
         fire_age = st.number_input("リタイア希望年齢", 18, 100, 50, key="fire_age_input")
+        retirement_allowance = st.number_input("想定退職金 (万円)", 0.00, 10000.00, 0.00, step=0.01)
         
         exp_type = st.radio("生活費の単位", ["月額", "年額"], horizontal=True)
         exp_val = st.number_input(f"リタイア後の生活費 ({exp_type})", 0.00, 2000.00, 25.00 if exp_type == "月額" else 300.00, step=0.01)
@@ -218,7 +239,8 @@ with tab2:
                 'livingExpense': living_exp_monthly,
                 'expectedReturnPost': ret_post,
                 'inflationRate': inf_rate,
-                'pensionAmount': pension_val
+                'pensionAmount': pension_val,
+                'retirementAllowance': retirement_allowance
             })
             if best_age:
                 st.success(f"最短 {best_age} 歳でFIRE可能です！")
@@ -239,7 +261,8 @@ with tab2:
             'livingExpense': living_exp_monthly,
             'expectedReturnPost': ret_post,
             'inflationRate': inf_rate,
-            'pensionAmount': pension_val
+            'pensionAmount': pension_val,
+            'retirementAllowance': retirement_allowance
         })
         
         df = pd.DataFrame(res['history'])
@@ -262,7 +285,7 @@ with tab2:
         with c2:
             st.metric("100歳時点の推定資産額", f"{res['finalAssets']:,.2f} 万円")
 
-        # FIRE加速バナー (468x60) - 新しいバナー
+        # FIRE加速バナー (468x60)
         st.markdown(f"""
         <div class="ad-banner-frame" style="border-color: #238636; background: linear-gradient(135deg, #1b4d2a 0%, #0d2b17 100%);">
             <div class="ad-sub-text">FIRE達成への近道を探す</div>

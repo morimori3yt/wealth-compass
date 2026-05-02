@@ -45,6 +45,10 @@ class FIRESimulator:
         for month in range(months_to_100 + 1):
             current_year = current_age + (month // 12)
             
+            # 退職金の受取（リタイア開始月のみ）
+            if month == (fire_age - current_age) * 12:
+                regular_assets += params.get('retirementAllowance', 0)
+
             # 1年ごとのデータを記録
             if month % 12 == 0:
                 results.append({

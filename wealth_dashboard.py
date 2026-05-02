@@ -120,20 +120,24 @@ with tab2:
                       color_discrete_map={'特定口座': '#1f6feb', 'NISA口座': '#238636'},
                       template="plotly_dark")
         
+        # グラフ全体のレイアウト設定
         fig.update_layout(
             margin=dict(l=0, r=0, t=50, b=0),
             hovermode="x unified",
-            xaxis=dict(range=[age, 100]),
+            xaxis=dict(
+                range=[age, 100],
+                tickformat=".0f",
+                ticksuffix="歳", # 軸のラベルに「歳」を追加
+                hoverformat=".0f歳" # ホバー時のヘッダーに「歳」を追加
+            ),
             yaxis=dict(autorange=True, fixedrange=False, rangemode="tozero")
         )
 
-        # ホバー表示の最終調整（「歳」を追加）
+        # ホバー表示の内訳設定
         fig.update_traces(
             hovertemplate="特定口座: %{customdata[0]:,.0f} 万円<br>NISA口座: %{customdata[1]:,.0f} 万円<br>合計: %{customdata[2]:,.0f} 万円",
             customdata=df_plot[['特定口座', 'NISA口座', '合計']]
         )
-        # x軸（年齢）のホバーラベルに「歳」を付与
-        fig.update_xaxes(hoverformat=".0f歳")
         
         st.plotly_chart(fig, use_container_width=True)
         st.subheader("診断レポート")

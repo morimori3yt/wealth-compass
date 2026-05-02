@@ -13,7 +13,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- カスタムCSS (スマホ最適化) ---
+# --- カスタムCSS (高度なレスポンシブ対応) ---
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
@@ -27,22 +27,28 @@ html, body, [class*="css"] {
     background-color: #0e1117;
 }
 
-/* ニュースカード */
+/* 共通：ニュースカード */
 .news-card {
     background: #1e2128;
-    padding: 1.5rem;
+    padding: 1.8rem;
     border-radius: 12px;
     border: 1px solid #30363d;
-    margin-bottom: 1.2rem;
+    margin-bottom: 1.5rem;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .news-title {
-    font-size: 1.25rem;
+    font-size: 1.3rem;
     font-weight: 700;
     color: #ffffff;
-    margin-bottom: 0.6rem;
+    margin-bottom: 0.8rem;
     line-height: 1.4;
+}
+
+.news-date {
+    font-size: 0.9rem;
+    color: #8b949e;
+    margin-bottom: 1rem;
 }
 
 .news-link {
@@ -50,20 +56,19 @@ html, body, [class*="css"] {
     color: #58a6ff !important;
     text-decoration: none;
     font-weight: 700;
-    font-size: 0.95rem;
     border: 1px solid #58a6ff;
     padding: 6px 16px;
     border-radius: 6px;
 }
 
-/* 広告コンテナ (コントラスト強化) */
+/* 広告コンテナ (視認性重視) */
 .ad-container {
-    background: linear-gradient(135deg, rgba(31, 111, 235, 0.25) 0%, rgba(13, 71, 161, 0.25) 100%);
+    background: linear-gradient(135deg, #004bb1 0%, #002d6b 100%); /* より濃い青に */
     border: 1px solid #1f6feb;
-    padding: 1.5rem;
+    padding: 1.8rem;
     border-radius: 12px;
     text-align: center;
-    margin: 1.5rem 0;
+    margin: 2rem 0;
 }
 
 .ad-badge {
@@ -71,22 +76,50 @@ html, body, [class*="css"] {
     color: white;
     padding: 3px 12px;
     border-radius: 4px;
-    font-size: 0.7rem;
+    font-size: 0.75rem;
     font-weight: 800;
-    margin-bottom: 0.8rem;
+    margin-bottom: 1rem;
     display: inline-block;
 }
 
-/* モバイル向け微調整 */
-@media (max-width: 640px) {
+/* ==========================================
+   スマホ向け調整 (@media (max-width: 768px))
+   ========================================== */
+@media (max-width: 768px) {
+    /* タイトルサイズ縮小 */
     .stMarkdown h1 {
-        font-size: 1.6rem !important;
+        font-size: 1.5rem !important;
+        line-height: 1.2 !important;
+        margin-bottom: 0.5rem !important;
+    }
+    .stMarkdown h2 {
+        font-size: 1.2rem !important;
+    }
+    .stMarkdown h3 {
+        font-size: 1.05rem !important;
+    }
+
+    /* ニュースカードの余白削減 */
+    .news-card {
+        padding: 1.2rem;
+        margin-bottom: 1rem;
     }
     .news-title {
         font-size: 1.15rem;
+        margin-bottom: 0.5rem;
     }
+    
+    /* 広告コンテナの調整 */
     .ad-container {
         padding: 1.2rem;
+        margin: 1.2rem 0;
+    }
+    
+    /* タブの余白削減 */
+    .stTabs [data-baseweb="tab"] {
+        padding-left: 10px !important;
+        padding-right: 10px !important;
+        font-size: 0.9rem !important;
     }
 }
 </style>
@@ -133,8 +166,8 @@ with tab1:
     <div class="ad-container">
         <span class="ad-badge">スポンサー情報</span>
         <div style="font-weight:700; color:white; font-size:1.15rem; margin-bottom:0.5rem;">楽天市場でお得に投資本・ガジェットを揃える</div>
-        <p style="color: #e6edf3; font-size: 0.9rem;">投資の勉強に必要な書籍や、快適な運用環境を整えるアイテムはこちら。</p>
-        <a href="https://rpx.a8.net/svt/ejp?a8mat=4B3GYD+C0U5KI+2HOM+6C1VM&rakuten=y&a8ejpredirect=http%3A%2F%2Fhb.afl.rakuten.co.jp%2Fhgc%2F0ea62065.34400275.0ea62066.204f04c0%2Fa26050208529_4B3GYD_C0U5KI_2HOM_6C1VM%3Fpc%3Dhttp%253A%252F%252Fwww.rakuten.co.jp%252F%26m%3Dhttp%253A%252F%252Fm.rakuten.co.jp%252F" rel="nofollow" style="color:#58a6ff; font-weight:700; text-decoration:none;">楽天でチェックする 👉</a>
+        <p style="color: #ffffff; font-size: 0.95rem; opacity: 0.9;">投資の勉強に必要な書籍や、快適な運用環境を整えるアイテムはこちら。</p>
+        <a href="https://rpx.a8.net/svt/ejp?a8mat=4B3GYD+C0U5KI+2HOM+6C1VM&rakuten=y&a8ejpredirect=http%3A%2F%2Fhb.afl.rakuten.co.jp%2Fhgc%2F0ea62065.34400275.0ea62066.204f04c0%2Fa26050208529_4B3GYD_C0U5KI_2HOM_6C1VM%3Fpc%3Dhttp%253A%252F%252Fwww.rakuten.co.jp%252F%26m%3Dhttp%253A%252F%252Fm.rakuten.co.jp%252F" rel="nofollow" style="color:#ffffff; font-weight:700; text-decoration:underline;">楽天でチェックする 👉</a>
         <img border="0" width="1" height="1" src="https://www17.a8.net/0.gif?a8mat=4B3GYD+C0U5KI+2HOM+6C1VM" alt="">
     </div>
     """, unsafe_allow_html=True)
@@ -148,10 +181,10 @@ with tab1:
         for i, entry in enumerate(news[:15]):
             if i > 0 and i % 5 == 0:
                 st.markdown(f"""
-                <div class="ad-container" style="background: rgba(48, 54, 61, 0.6); border-color: #30363d;">
+                <div class="ad-container" style="background: rgba(30, 33, 40, 0.8); border-color: #30363d;">
                     <span class="ad-badge" style="background: #30363d;">おすすめ</span>
                     <div style="font-weight:700; color:white; font-size:1.1rem; margin-bottom:0.4rem;">ないものはない！お買い物なら楽天市場</div>
-                    <p style="color: #e6edf3; font-size: 0.85rem;">生活必需品から趣味のアイテムまで、楽天ポイントを貯めながら賢くお買い物。</p>
+                    <p style="color: #ffffff; font-size: 0.9rem; opacity: 0.85;">生活必需品から趣味のアイテムまで、楽天ポイントを貯めながら賢くお買い物。</p>
                     <a href="https://rpx.a8.net/svt/ejp?a8mat=4B3GYD+C0U5KI+2HOM+6BU5U&rakuten=y&a8ejpredirect=http%3A%2F%2Fhb.afl.rakuten.co.jp%2Fhgc%2F0ea62065.34400275.0ea62066.204f04c0%2Fa26050208529_4B3GYD_C0U5KI_2HOM_6BU5U%3Fpc%3Dhttp%253A%252F%252Fwww.rakuten.co.jp%252F%26m%3Dhttp%253A%252F%252Fm.rakuten.co.jp%252F" rel="nofollow" style="color:#58a6ff; font-weight:700; text-decoration:none;">楽天市場へ 👉</a>
                     <img border="0" width="1" height="1" src="https://www16.a8.net/0.gif?a8mat=4B3GYD+C0U5KI+2HOM+6BU5U" alt="">
                 </div>
@@ -160,7 +193,7 @@ with tab1:
             st.markdown(f"""
             <div class="news-card">
                 <div class="news-title">{entry.title}</div>
-                <div style="font-size:0.85rem; color:#8b949e; margin-bottom:1rem;">🗓 {entry.published}</div>
+                <div class="news-date">🗓 {entry.published}</div>
                 <a href="{entry.link}" target="_blank" class="news-link">記事の詳細を確認する</a>
             </div>
             """, unsafe_allow_html=True)
@@ -257,11 +290,11 @@ with tab2:
             st.metric("100歳時点の推定資産額", f"{int(res['finalAssets']):,} 万円")
 
         st.markdown(f"""
-        <div class="ad-container" style="border-color: #238636; background: rgba(35, 134, 54, 0.2);">
+        <div class="ad-container" style="border-color: #238636; background: rgba(35, 134, 54, 0.3);">
             <span class="ad-badge" style="background: #238636;">FIRE加速アイテム</span>
             <div style="font-weight:700; color:white; font-size:1.1rem; margin-bottom:0.4rem;">楽天で賢く資産運用本・必需品を揃える</div>
-            <p style="color: #e6edf3; font-size: 0.85rem;">シミュレーション結果を現実に。必要な知識やツールは楽天で揃えましょう。</p>
-            <a href="https://rpx.a8.net/svt/ejp?a8mat=4B3GYD+C0U5KI+2HOM+6BU5U&rakuten=y&a8ejpredirect=http%3A%2F%2Fhb.afl.rakuten.co.jp%2Fhgc%2F0ea62065.34400275.0ea62066.204f04c0%2Fa26050208529_4B3GYD_C0U5KI_2HOM_6BU5U%3Fpc%3Dhttp%253A%252F%252Fwww.rakuten.co.jp%252F%26m%3Dhttp%253A%252F%252Fm.rakuten.co.jp%252F" rel="nofollow" style="color:#3fb950; font-weight:700; text-decoration:none;">楽天市場で探す 👉</a>
+            <p style="color: #ffffff; font-size: 0.95rem; opacity: 0.9;">シミュレーション結果を現実に。必要な知識やツールは楽天で揃えましょう。</p>
+            <a href="https://rpx.a8.net/svt/ejp?a8mat=4B3GYD+C0U5KI+2HOM+6BU5U&rakuten=y&a8ejpredirect=http%3A%2F%2Fhb.afl.rakuten.co.jp%2Fhgc%2F0ea62065.34400275.0ea62066.204f04c0%2Fa26050208529_4B3GYD_C0U5KI_2HOM_6BU5U%3Fpc%3Dhttp%253A%252F%252Fwww.rakuten.co.jp%252F%26m%3Dhttp%253A%252F%252Fm.rakuten.co.jp%252F" rel="nofollow" style="color:#ffffff; font-weight:700; text-decoration:underline;">楽天市場で探す 👉</a>
             <img border="0" width="1" height="1" src="https://www16.a8.net/0.gif?a8mat=4B3GYD+C0U5KI+2HOM+6BU5U" alt="">
         </div>
         """, unsafe_allow_html=True)

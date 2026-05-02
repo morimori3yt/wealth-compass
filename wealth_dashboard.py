@@ -82,21 +82,16 @@ with tab2:
         monthly_inv = st.number_input("毎月の積立額 (万円)", 0.00, 100.00, 10.00, step=0.01)
         ret_pre = st.number_input("積立期 (年利%)", 0.0, 100.0, 5.0, step=0.1)
         ret_post = st.number_input("リタイア後 (年利%)", 0.0, 100.0, 3.0, step=0.1)
-        
         st.markdown("**リタイア・老後設定**")
         fire_age = st.number_input("リタイア希望年齢", 18, 100, st.session_state.fire_age_val)
         retirement_allowance = st.number_input("想定退職金 (万円)", 0.00, 10000.00, 0.00, step=0.01)
-        
         exp_type = st.radio("生活費の単位", ["月額", "年額"], horizontal=True)
         exp_val = st.number_input(f"生活費 ({exp_type})", 0.00, 2000.00, 25.00 if exp_type == "月額" else 300.00, step=0.01)
         living_exp_monthly = exp_val if exp_type == "月額" else exp_val / 12
-        
         c_p1, c_p2 = st.columns(2)
         with c_p1: pension_age = st.number_input("年金受給開始年齢", 60, 75, 65)
         with c_p2: pension_val = st.number_input("受給年金額 (月額)", 0.00, 50.00, 15.00, step=0.01)
-        
         inf_rate = st.number_input("想定インフレ率 (%)", 0.0, 100.0, 1.0, step=0.1)
-
         if st.button("✨ 最短FIRE年齢を計算する", use_container_width=True):
             sim_rev = FIRESimulator()
             best_age = sim_rev.find_possible_fire_age({
@@ -119,19 +114,25 @@ with tab2:
         df_plot = df.rename(columns={'regularAssets': '特定口座', 'nisaAssets': 'NISA口座'})
         df_plot['合計'] = df_plot['特定口座'] + df_plot['NISA口座']
         
-        # グラフ描画（詳細ホバー設定）
+        # グラフ描画（安定重視）
         fig = px.area(df_plot, x='age', y=['特定口座', 'NISA口座'],
                       title="100歳までの資産推移予測",
                       labels={'value': '資産額 (万円)', 'age': '年齢', 'variable': '口座種別'},
                       color_discrete_map={'特定口座': '#1f6feb', 'NISA口座': '#238636'},
-                      hover_data={'age': True, '特定口座': ':,.0f', 'NISA口座': ':,.0f', '合計': ':,.0f'},
                       template="plotly_dark")
         
+        # 縦軸の自動調整を確実に機能させるための設定
         fig.update_layout(
             margin=dict(l=0, r=0, t=50, b=0),
             hovermode="x unified",
             xaxis=dict(range=[age, 100]),
-            yaxis=dict(autorange=True, rangemode="tozero")
+            yaxis=dict(autorange=True, fixedrange=False, rangemode="tozero")
+        )
+
+        # ホバー表示の精密設定（4項目）
+        fig.update_traces(
+            hovertemplate="特定口座: %{customdata[0]:,.0f} 万円<br>NISA口座: %{customdata[1]:,.0f} 万円<br>合計: %{customdata[2]:,.0f} 万円",
+            customdata=df_plot[['特定口座', 'NISA口座', '合計']]
         )
         
         st.plotly_chart(fig, use_container_width=True)

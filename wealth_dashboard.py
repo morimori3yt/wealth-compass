@@ -13,7 +13,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- カスタムCSS (スマホ最適化済み) ---
+# --- カスタムCSS ---
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
@@ -61,56 +61,31 @@ html, body, [class*="css"] {
     border-radius: 6px;
 }
 
-/* 広告コンテナ (視認性重視) */
-.ad-container {
+/* プレミアム広告バナー枠 */
+.ad-banner-frame {
     background: linear-gradient(135deg, #004bb1 0%, #002d6b 100%);
-    border: 1px solid #1f6feb;
-    padding: 1.8rem;
-    border-radius: 12px;
+    border: 2px solid #1f6feb;
+    padding: 1.5rem;
+    border-radius: 16px;
     text-align: center;
-    margin: 2rem 0;
+    margin: 2.5rem 0;
+    box-shadow: 0 10px 25px rgba(31, 111, 235, 0.3);
 }
 
-.ad-badge {
-    background: #1f6feb;
-    color: white;
-    padding: 3px 12px;
-    border-radius: 4px;
-    font-size: 0.75rem;
-    font-weight: 800;
+.ad-sub-text {
+    color: #ffffff;
+    font-size: 0.9rem;
+    opacity: 0.9;
     margin-bottom: 1rem;
-    display: inline-block;
+    font-weight: 600;
 }
 
-/* モバイル向け微調整 */
 @media (max-width: 768px) {
     .stMarkdown h1 {
         font-size: 1.5rem !important;
-        line-height: 1.2 !important;
-        margin-bottom: 0.5rem !important;
     }
-    .stMarkdown h2 {
-        font-size: 1.2rem !important;
-    }
-    .stMarkdown h3 {
-        font-size: 1.05rem !important;
-    }
-    .news-card {
-        padding: 1.2rem;
-        margin-bottom: 1rem;
-    }
-    .news-title {
-        font-size: 1.15rem;
-        margin-bottom: 0.5rem;
-    }
-    .ad-container {
-        padding: 1.2rem;
-        margin: 1.2rem 0;
-    }
-    .stTabs [data-baseweb="tab"] {
-        padding-left: 10px !important;
-        padding-right: 10px !important;
-        font-size: 0.9rem !important;
+    .ad-banner-frame {
+        padding: 1rem;
     }
 }
 </style>
@@ -152,14 +127,13 @@ with tab1:
 
     current_kw = st.session_state.get('kw', '米国株式市場')
     
-    # 広告枠 1
+    # プレミアムバナー 1 (234x60)
     st.markdown(f"""
-    <div class="ad-container">
-        <span class="ad-badge">スポンサー情報</span>
-        <div style="font-weight:700; color:white; font-size:1.15rem; margin-bottom:0.5rem;">楽天市場でお得に投資本・ガジェットを揃える</div>
-        <p style="color: #ffffff; font-size: 0.95rem; opacity: 0.9;">投資の勉強に必要な書籍や、快適な運用環境を整えるアイテムはこちら。</p>
-        <a href="https://rpx.a8.net/svt/ejp?a8mat=4B3GYD+C0U5KI+2HOM+6C1VM&rakuten=y&a8ejpredirect=http%3A%2F%2Fhb.afl.rakuten.co.jp%2Fhgc%2F0ea62065.34400275.0ea62066.204f04c0%2Fa26050208529_4B3GYD_C0U5KI_2HOM_6C1VM%3Fpc%3Dhttp%253A%252F%252Fwww.rakuten.co.jp%252F%26m%3Dhttp%253A%252F%252Fm.rakuten.co.jp%252F" rel="nofollow" style="color:#ffffff; font-weight:700; text-decoration:underline;">楽天でチェックする 👉</a>
-        <img border="0" width="1" height="1" src="https://www17.a8.net/0.gif?a8mat=4B3GYD+C0U5KI+2HOM+6C1VM" alt="">
+    <div class="ad-banner-frame">
+        <div class="ad-sub-text">資産形成の必需品は楽天市場でチェック</div>
+        <a href="https://rpx.a8.net/svt/ejp?a8mat=4B3GYD+C0U5KI+2HOM+686ZL&rakuten=y&a8ejpredirect=http%3A%2F%2Fhb.afl.rakuten.co.jp%2Fhgc%2F0ea62065.34400275.0ea62066.204f04c0%2Fa26050208529_4B3GYD_C0U5KI_2HOM_686ZL%3Fpc%3Dhttp%253A%252F%252Fwww.rakuten.co.jp%252F%26m%3Dhttp%253A%252F%252Fm.rakuten.co.jp%252F" rel="nofollow">
+        <img src="http://hbb.afl.rakuten.co.jp/hsb/0eb4bbc0.254a14a3.0eb4bbaa.95151395/" border="0" style="border-radius: 4px;"></a>
+        <img border="0" width="1" height="1" src="https://www18.a8.net/0.gif?a8mat=4B3GYD+C0U5KI+2HOM+686ZL" alt="">
     </div>
     """, unsafe_allow_html=True)
 
@@ -171,13 +145,16 @@ with tab1:
     else:
         for i, entry in enumerate(news[:15]):
             if i > 0 and i % 5 == 0:
+                # プレミアムバナー 2 (120x60) - ニュース風に馴染ませる
                 st.markdown(f"""
-                <div class="ad-container" style="background: rgba(30, 33, 40, 0.8); border-color: #30363d;">
-                    <span class="ad-badge" style="background: #30363d;">おすすめ</span>
-                    <div style="font-weight:700; color:white; font-size:1.1rem; margin-bottom:0.4rem;">ないものはない！お買い物なら楽天市場</div>
-                    <p style="color: #ffffff; font-size: 0.9rem; opacity: 0.85;">生活必需品から趣味のアイテムまで、楽天ポイントを貯めながら賢くお買い物。</p>
-                    <a href="https://rpx.a8.net/svt/ejp?a8mat=4B3GYD+C0U5KI+2HOM+6BU5U&rakuten=y&a8ejpredirect=http%3A%2F%2Fhb.afl.rakuten.co.jp%2Fhgc%2F0ea62065.34400275.0ea62066.204f04c0%2Fa26050208529_4B3GYD_C0U5KI_2HOM_6BU5U%3Fpc%3Dhttp%253A%252F%252Fwww.rakuten.co.jp%252F%26m%3Dhttp%253A%252F%252Fm.rakuten.co.jp%252F" rel="nofollow" style="color:#58a6ff; font-weight:700; text-decoration:none;">楽天市場へ 👉</a>
-                    <img border="0" width="1" height="1" src="https://www16.a8.net/0.gif?a8mat=4B3GYD+C0U5KI+2HOM+6BU5U" alt="">
+                <div class="ad-banner-frame" style="background: rgba(30, 33, 40, 0.8); border-color: #30363d; display: flex; align-items: center; justify-content: center; gap: 20px;">
+                    <div style="text-align: left;">
+                        <div style="font-weight:700; color:white; font-size:1rem;">楽天市場</div>
+                        <div style="color:#8b949e; font-size:0.8rem;">お買い物なら楽天市場へ</div>
+                    </div>
+                    <a href="https://rpx.a8.net/svt/ejp?a8mat=4B3GYD+C0U5KI+2HOM+5ZU29&rakuten=y&a8ejpredirect=http%3A%2F%2Fhb.afl.rakuten.co.jp%2Fhgc%2F0ea62065.34400275.0ea62066.204f04c0%2Fa26050208529_4B3GYD_C0U5KI_2HOM_5ZU29%3Fpc%3Dhttp%253A%252F%252Fwww.rakuten.co.jp%252F%26m%3Dhttp%253A%252F%252Fm.rakuten.co.jp%252F" rel="nofollow">
+                    <img src="http://hbb.afl.rakuten.co.jp/hsb/0eb4bbb2.58d658fd.0eb4bbaa.95151395/" border="0" style="border-radius: 4px;"></a>
+                    <img border="0" width="1" height="1" src="https://www16.a8.net/0.gif?a8mat=4B3GYD+C0U5KI+2HOM+5ZU29" alt="">
                 </div>
                 """, unsafe_allow_html=True)
             
@@ -280,12 +257,12 @@ with tab2:
         with c2:
             st.metric("100歳時点の推定資産額", f"{res['finalAssets']:,.2f} 万円")
 
+        # FIRE加速バナー (234x60)
         st.markdown(f"""
-        <div class="ad-container" style="border-color: #238636; background: rgba(35, 134, 54, 0.3);">
-            <span class="ad-badge" style="background: #238636;">FIRE加速アイテム</span>
-            <div style="font-weight:700; color:white; font-size:1.1rem; margin-bottom:0.4rem;">楽天で賢く資産運用本・必需品を揃える</div>
-            <p style="color: #ffffff; font-size: 0.95rem; opacity: 0.9;">シミュレーション結果を現実に。必要な知識やツールは楽天で揃えましょう。</p>
-            <a href="https://rpx.a8.net/svt/ejp?a8mat=4B3GYD+C0U5KI+2HOM+6BU5U&rakuten=y&a8ejpredirect=http%3A%2F%2Fhb.afl.rakuten.co.jp%2Fhgc%2F0ea62065.34400275.0ea62066.204f04c0%2Fa26050208529_4B3GYD_C0U5KI_2HOM_6BU5U%3Fpc%3Dhttp%253A%252F%252Fwww.rakuten.co.jp%252F%26m%3Dhttp%253A%252F%252Fm.rakuten.co.jp%252F" rel="nofollow" style="color:#ffffff; font-weight:700; text-decoration:underline;">楽天市場で探す 👉</a>
-            <img border="0" width="1" height="1" src="https://www16.a8.net/0.gif?a8mat=4B3GYD+C0U5KI+2HOM+6BU5U" alt="">
+        <div class="ad-banner-frame" style="border-color: #238636; background: linear-gradient(135deg, #1b4d2a 0%, #0d2b17 100%);">
+            <div class="ad-sub-text">FIRE達成への近道を探す</div>
+            <a href="https://rpx.a8.net/svt/ejp?a8mat=4B3GYD+C0U5KI+2HOM+686ZL&rakuten=y&a8ejpredirect=http%3A%2F%2Fhb.afl.rakuten.co.jp%2Fhgc%2F0ea62065.34400275.0ea62066.204f04c0%2Fa26050208529_4B3GYD_C0U5KI_2HOM_686ZL%3Fpc%3Dhttp%253A%252F%252Fwww.rakuten.co.jp%252F%26m%3Dhttp%253A%252F%252Fm.rakuten.co.jp%252F" rel="nofollow">
+            <img src="http://hbb.afl.rakuten.co.jp/hsb/0eb4bbc0.254a14a3.0eb4bbaa.95151395/" border="0" style="border-radius: 4px;"></a>
+            <img border="0" width="1" height="1" src="https://www18.a8.net/0.gif?a8mat=4B3GYD+C0U5KI+2HOM+686ZL" alt="">
         </div>
         """, unsafe_allow_html=True)

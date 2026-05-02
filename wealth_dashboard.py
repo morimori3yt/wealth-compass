@@ -5,7 +5,7 @@ import pandas as pd
 import plotly.express as px
 from simulation_logic import FIRESimulator
 
-# --- ページ設定 ---
+# --- page settings ---
 st.set_page_config(
     page_title="資産形成の羅針盤 | 米国株ニュース & FIRE",
     page_icon="🧭",
@@ -13,7 +13,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- カスタムCSS ---
+# --- custom CSS ---
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
@@ -27,7 +27,7 @@ html, body, [class*="css"] {
     background-color: #0e1117;
 }
 
-/* ニュースカード */
+/* news cards */
 .news-card {
     background: #1e2128;
     padding: 1.8rem;
@@ -61,7 +61,7 @@ html, body, [class*="css"] {
     border-radius: 6px;
 }
 
-/* プレミアム広告バナー枠 */
+/* premium ad banner frame */
 .ad-banner-frame {
     background: linear-gradient(135deg, #004bb1 0%, #002d6b 100%);
     border: 2px solid #1f6feb;
@@ -116,7 +116,7 @@ html, body, [class*="css"] {
 </style>
 """, unsafe_allow_html=True)
 
-# --- データ取得処理 ---
+# --- data fetch processing ---
 @st.cache_data(ttl=3600)
 def fetch_news(keyword):
     encoded_keyword = urllib.parse.quote(keyword)
@@ -127,7 +127,7 @@ def fetch_news(keyword):
     except:
         return []
 
-# --- メインコンテンツ ---
+# --- main content ---
 st.title("🧭 資産形成の羅針盤 (Wealth Compass)")
 st.markdown("### 米国株・経済ニュース × FIREシミュレーション")
 
@@ -152,7 +152,7 @@ with tab1:
 
     current_kw = st.session_state.get('kw', '米国株式市場')
     
-    # プレミアムバナー 1 (468x60)
+    # premium banner 1 (468x60)
     st.markdown(f"""
     <div class="ad-banner-frame">
         <div class="ad-sub-text">資産形成の必需品は楽天市場でチェック</div>
@@ -170,7 +170,7 @@ with tab1:
     else:
         for i, entry in enumerate(news[:15]):
             if i > 0 and i % 5 == 0:
-                # プレミアムバナー 2 (120x60)
+                # premium banner 2 (120x60)
                 st.markdown(f"""
                 <div class="ad-banner-frame" style="background: rgba(30, 33, 40, 0.8); border-color: #30363d; display: flex; align-items: center; justify-content: center; gap: 20px;">
                     <div style="text-align: left;">
@@ -266,13 +266,22 @@ with tab2:
         })
         
         df = pd.DataFrame(res['history'])
-        fig = px.area(df, x='age', y=['regularAssets', 'nisaAssets'], 
-                      title="将来の資産推移予測",
+        df_plot = df.rename(columns={'regularAssets': '特定口座', 'nisaAssets': 'NISA口座'})
+        # ホバー用の合計値を算出
+        df_plot['合計'] = df_plot['特定口座'] + df_plot['NISA口座']
+        
+        fig = px.area(df_plot, x='age', y=['特定口座', 'NISA口座'], 
+                      title="100歳までの資産推移予測",
                       labels={'value': '資産額 (万円)', 'age': '年齢', 'variable': '口座種別'},
-                      color_discrete_map={'regularAssets': '#1f6feb', 'nisaAssets': '#238636'},
+                      color_discrete_map={'特定口座': '#1f6feb', 'NISA口座': '#238636'},
+                      hover_data={'age': True, '特定口座': ':,.2f', 'NISA口座': ':,.2f', '合計': ':,.2f'},
                       template="plotly_dark")
         
-        fig.update_layout(margin=dict(l=0, r=0, t=50, b=0), hovermode="x unified")
+        fig.update_layout(
+            margin=dict(l=0, r=0, t=50, b=0), 
+            hovermode="x unified",
+            xaxis=dict(range=[age, 100])
+        )
         st.plotly_chart(fig, use_container_width=True)
         
         st.subheader("診断レポート")

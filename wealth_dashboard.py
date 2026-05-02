@@ -114,14 +114,12 @@ with tab2:
         df_plot = df.rename(columns={'regularAssets': '特定口座', 'nisaAssets': 'NISA口座'})
         df_plot['合計'] = df_plot['特定口座'] + df_plot['NISA口座']
         
-        # グラフ描画（安定重視）
         fig = px.area(df_plot, x='age', y=['特定口座', 'NISA口座'],
                       title="100歳までの資産推移予測",
                       labels={'value': '資産額 (万円)', 'age': '年齢', 'variable': '口座種別'},
                       color_discrete_map={'特定口座': '#1f6feb', 'NISA口座': '#238636'},
                       template="plotly_dark")
         
-        # 縦軸の自動調整を確実に機能させるための設定
         fig.update_layout(
             margin=dict(l=0, r=0, t=50, b=0),
             hovermode="x unified",
@@ -129,11 +127,13 @@ with tab2:
             yaxis=dict(autorange=True, fixedrange=False, rangemode="tozero")
         )
 
-        # ホバー表示の精密設定（4項目）
+        # ホバー表示の最終調整（「歳」を追加）
         fig.update_traces(
             hovertemplate="特定口座: %{customdata[0]:,.0f} 万円<br>NISA口座: %{customdata[1]:,.0f} 万円<br>合計: %{customdata[2]:,.0f} 万円",
             customdata=df_plot[['特定口座', 'NISA口座', '合計']]
         )
+        # x軸（年齢）のホバーラベルに「歳」を付与
+        fig.update_xaxes(hoverformat=".0f歳")
         
         st.plotly_chart(fig, use_container_width=True)
         st.subheader("診断レポート")

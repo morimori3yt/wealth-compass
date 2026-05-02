@@ -27,26 +27,19 @@ html, body, [class*="css"] {
     background-color: #0e1117;
 }
 
-/* ニュースカードの視認性向上 */
 .news-card {
-    background: #1e2128; /* より濃い背景色に変更 */
+    background: #1e2128;
     padding: 1.8rem;
     border-radius: 12px;
     border: 1px solid #30363d;
     margin-bottom: 1.5rem;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-    transition: transform 0.2s ease;
-}
-
-.news-card:hover {
-    transform: translateY(-2px);
-    border-color: #58a6ff;
 }
 
 .news-title {
-    font-size: 1.35rem; /* サイズアップ */
+    font-size: 1.35rem;
     font-weight: 700;
-    color: #ffffff; /* 完全な白に */
+    color: #ffffff;
     margin-bottom: 0.8rem;
     line-height: 1.4;
 }
@@ -66,14 +59,8 @@ html, body, [class*="css"] {
     border: 1px solid #58a6ff;
     padding: 6px 16px;
     border-radius: 6px;
-    transition: background 0.2s;
 }
 
-.news-link:hover {
-    background: rgba(88, 166, 255, 0.1);
-}
-
-/* 広告コンテナ */
 .ad-container {
     background: linear-gradient(135deg, rgba(31, 111, 235, 0.15) 0%, rgba(13, 71, 161, 0.15) 100%);
     border: 1px solid #1f6feb;
@@ -92,11 +79,6 @@ html, body, [class*="css"] {
     font-weight: 800;
     margin-bottom: 1rem;
     display: inline-block;
-}
-
-.stButton>button {
-    border-radius: 6px;
-    font-weight: 700;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -137,13 +119,14 @@ with tab1:
 
     current_kw = st.session_state.get('kw', '米国株式市場')
     
-    # 広告枠 1
+    # 広告枠 1 (楽天アフィリエイト 1つ目)
     st.markdown(f"""
     <div class="ad-container">
         <span class="ad-badge">スポンサー情報</span>
-        <div style="font-weight:700; color:white; font-size:1.2rem; margin-bottom:0.5rem;">米国株投資に最適な証券口座を比較</div>
-        <p style="color: #c9d1d9; font-size: 0.95rem;">低コストで米国株・ETFに投資。今なら口座開設キャンペーン実施中。</p>
-        <a href="#" style="color:#58a6ff; font-weight:700; text-decoration:none;">詳細・無料口座開設はこちら 👉</a>
+        <div style="font-weight:700; color:white; font-size:1.2rem; margin-bottom:0.5rem;">楽天市場でお得に投資本・ガジェットを揃える</div>
+        <p style="color: #c9d1d9; font-size: 0.95rem;">投資の勉強に必要な書籍や、快適な運用環境を整えるアイテムはこちら。</p>
+        <a href="https://rpx.a8.net/svt/ejp?a8mat=4B3GYD+C0U5KI+2HOM+6C1VM&rakuten=y&a8ejpredirect=http%3A%2F%2Fhb.afl.rakuten.co.jp%2Fhgc%2F0ea62065.34400275.0ea62066.204f04c0%2Fa26050208529_4B3GYD_C0U5KI_2HOM_6C1VM%3Fpc%3Dhttp%253A%252F%252Fwww.rakuten.co.jp%252F%26m%3Dhttp%253A%252F%252Fm.rakuten.co.jp%252F" rel="nofollow" style="color:#58a6ff; font-weight:700; text-decoration:none;">楽天でチェックする 👉</a>
+        <img border="0" width="1" height="1" src="https://www17.a8.net/0.gif?a8mat=4B3GYD+C0U5KI+2HOM+6C1VM" alt="">
     </div>
     """, unsafe_allow_html=True)
 
@@ -155,12 +138,14 @@ with tab1:
     else:
         for i, entry in enumerate(news[:15]):
             if i > 0 and i % 5 == 0:
+                # 広告枠 2 (楽天アフィリエイト 2つ目)
                 st.markdown(f"""
                 <div class="ad-container" style="background: rgba(48, 54, 61, 0.5); border-color: #30363d;">
                     <span class="ad-badge" style="background: #30363d;">おすすめ</span>
-                    <div style="font-weight:700; color:white; font-size:1.1rem; margin-bottom:0.5rem;">一生モノの資産運用スキルを身につける</div>
-                    <p style="color: #c9d1d9; font-size: 0.9rem;">プロが教える投資スクールの無料体験セミナー実施中。</p>
-                    <a href="#" style="color:#58a6ff; font-weight:700; text-decoration:none;">無料セミナーを予約する 👉</a>
+                    <div style="font-weight:700; color:white; font-size:1.1rem; margin-bottom:0.5rem;">ないものはない！お買い物なら楽天市場</div>
+                    <p style="color: #c9d1d9; font-size: 0.9rem;">生活必需品から趣味のアイテムまで、楽天ポイントを貯めながら賢くお買い物。</p>
+                    <a href="https://rpx.a8.net/svt/ejp?a8mat=4B3GYD+C0U5KI+2HOM+6BU5U&rakuten=y&a8ejpredirect=http%3A%2F%2Fhb.afl.rakuten.co.jp%2Fhgc%2F0ea62065.34400275.0ea62066.204f04c0%2Fa26050208529_4B3GYD_C0U5KI_2HOM_6BU5U%3Fpc%3Dhttp%253A%252F%252Fwww.rakuten.co.jp%252F%26m%3Dhttp%253A%252F%252Fm.rakuten.co.jp%252F" rel="nofollow" style="color:#58a6ff; font-weight:700; text-decoration:none;">楽天市場へ 👉</a>
+                    <img border="0" width="1" height="1" src="https://www16.a8.net/0.gif?a8mat=4B3GYD+C0U5KI+2HOM+6BU5U" alt="">
                 </div>
                 """, unsafe_allow_html=True)
             
@@ -263,11 +248,13 @@ with tab2:
         with c2:
             st.metric("100歳時点の推定資産額", f"{int(res['finalAssets']):,} 万円")
 
+        # 広告枠 3 (楽天アフィリエイト 2つ目)
         st.markdown(f"""
         <div class="ad-container" style="border-color: #238636; background: rgba(35, 134, 54, 0.1);">
-            <span class="ad-badge" style="background: #238636;">FIRE加速プラン</span>
-            <div style="font-weight:700; color:white; font-size:1.1rem; margin-bottom:0.5rem;">【無料】お金のプロによる家計診断</div>
-            <p style="color: #c9d1d9; font-size: 0.9rem;">あなたのライフプランに基づいた最適な投資戦略をアドバイス。</p>
-            <a href="#" style="color:#3fb950; font-weight:700; text-decoration:none;">無料相談の予約はこちら 👉</a>
+            <span class="ad-badge" style="background: #238636;">FIRE加速アイテム</span>
+            <div style="font-weight:700; color:white; font-size:1.1rem; margin-bottom:0.5rem;">楽天で賢く資産運用本・必需品を揃える</div>
+            <p style="color: #c9d1d9; font-size: 0.9rem;">シミュレーション結果を現実に。必要な知識やツールは楽天で揃えましょう。</p>
+            <a href="https://rpx.a8.net/svt/ejp?a8mat=4B3GYD+C0U5KI+2HOM+6BU5U&rakuten=y&a8ejpredirect=http%3A%2F%2Fhb.afl.rakuten.co.jp%2Fhgc%2F0ea62065.34400275.0ea62066.204f04c0%2Fa26050208529_4B3GYD_C0U5KI_2HOM_6BU5U%3Fpc%3Dhttp%253A%252F%252Fwww.rakuten.co.jp%252F%26m%3Dhttp%253A%252F%252Fm.rakuten.co.jp%252F" rel="nofollow" style="color:#3fb950; font-weight:700; text-decoration:none;">楽天市場で探す 👉</a>
+            <img border="0" width="1" height="1" src="https://www16.a8.net/0.gif?a8mat=4B3GYD+C0U5KI+2HOM+6BU5U" alt="">
         </div>
         """, unsafe_allow_html=True)

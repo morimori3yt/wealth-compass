@@ -13,7 +13,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- カスタムCSS (高度なレスポンシブ対応) ---
+# --- カスタムCSS (スマホ最適化済み) ---
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
@@ -27,7 +27,7 @@ html, body, [class*="css"] {
     background-color: #0e1117;
 }
 
-/* 共通：ニュースカード */
+/* ニュースカード */
 .news-card {
     background: #1e2128;
     padding: 1.8rem;
@@ -63,7 +63,7 @@ html, body, [class*="css"] {
 
 /* 広告コンテナ (視認性重視) */
 .ad-container {
-    background: linear-gradient(135deg, #004bb1 0%, #002d6b 100%); /* より濃い青に */
+    background: linear-gradient(135deg, #004bb1 0%, #002d6b 100%);
     border: 1px solid #1f6feb;
     padding: 1.8rem;
     border-radius: 12px;
@@ -82,11 +82,8 @@ html, body, [class*="css"] {
     display: inline-block;
 }
 
-/* ==========================================
-   スマホ向け調整 (@media (max-width: 768px))
-   ========================================== */
+/* モバイル向け微調整 */
 @media (max-width: 768px) {
-    /* タイトルサイズ縮小 */
     .stMarkdown h1 {
         font-size: 1.5rem !important;
         line-height: 1.2 !important;
@@ -98,8 +95,6 @@ html, body, [class*="css"] {
     .stMarkdown h3 {
         font-size: 1.05rem !important;
     }
-
-    /* ニュースカードの余白削減 */
     .news-card {
         padding: 1.2rem;
         margin-bottom: 1rem;
@@ -108,14 +103,10 @@ html, body, [class*="css"] {
         font-size: 1.15rem;
         margin-bottom: 0.5rem;
     }
-    
-    /* 広告コンテナの調整 */
     .ad-container {
         padding: 1.2rem;
         margin: 1.2rem 0;
     }
-    
-    /* タブの余白削減 */
     .stTabs [data-baseweb="tab"] {
         padding-left: 10px !important;
         padding-right: 10px !important;
@@ -211,14 +202,14 @@ with tab2:
         st.markdown("**現在の運用資産額 (万円)**")
         c_reg, c_nisa = st.columns(2)
         with c_reg:
-            reg_assets = st.number_input("特定口座", 0, 100000, 400)
+            reg_assets = st.number_input("特定口座", 0.00, 100000.00, 400.00, step=0.01)
         with c_nisa:
-            nisa_assets = st.number_input("NISA口座", 0, 100000, 100)
+            nisa_assets = st.number_input("NISA口座", 0.00, 100000.00, 100.00, step=0.01)
         
         total_assets = reg_assets + nisa_assets
-        st.info(f"合計資産額: {total_assets:,} 万円")
+        st.info(f"合計資産額: {total_assets:,.2f} 万円")
         
-        monthly_inv = st.number_input("毎月の積立額 (万円)", 0, 100, 10)
+        monthly_inv = st.number_input("毎月の積立額 (万円)", 0.00, 100.00, 10.00, step=0.01)
         
         st.markdown("**期待利回り (%)**")
         ret_pre = st.number_input("積立期 (年利)", 0.0, 100.0, 5.0, step=0.1)
@@ -228,10 +219,10 @@ with tab2:
         fire_age = st.number_input("リタイア希望年齢", 18, 100, 50, key="fire_age_input")
         
         exp_type = st.radio("生活費の単位", ["月額", "年額"], horizontal=True)
-        exp_val = st.number_input(f"リタイア後の生活費 ({exp_type})", 0, 2000, 25 if exp_type == "月額" else 300)
+        exp_val = st.number_input(f"リタイア後の生活費 ({exp_type})", 0.00, 2000.00, 25.00 if exp_type == "月額" else 300.00, step=0.01)
         living_exp_monthly = exp_val if exp_type == "月額" else exp_val / 12
         
-        pension_val = st.number_input("受給年金額 (月額/万円)", 0, 50, 15)
+        pension_val = st.number_input("受給年金額 (月額/万円)", 0.00, 50.00, 15.00, step=0.01)
         inf_rate = st.number_input("想定インフレ率 (%)", 0.0, 100.0, 1.0, step=0.1)
 
         if st.button("✨ 最短FIRE年齢を計算する", use_container_width=True):
@@ -287,7 +278,7 @@ with tab2:
             else:
                 st.success("資産寿命: 100歳以上を維持")
         with c2:
-            st.metric("100歳時点の推定資産額", f"{int(res['finalAssets']):,} 万円")
+            st.metric("100歳時点の推定資産額", f"{res['finalAssets']:,.2f} 万円")
 
         st.markdown(f"""
         <div class="ad-container" style="border-color: #238636; background: rgba(35, 134, 54, 0.3);">

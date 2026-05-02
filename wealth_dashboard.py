@@ -80,10 +80,10 @@ html, body, [class*="css"] {
 /* モバイル向け微調整 */
 @media (max-width: 640px) {
     .stMarkdown h1 {
-        font-size: 1.6rem !important; /* タイトルを少し小さく */
+        font-size: 1.6rem !important;
     }
     .news-title {
-        font-size: 1.15rem; /* 記事タイトルも微調整 */
+        font-size: 1.15rem;
     }
     .ad-container {
         padding: 1.2rem;
@@ -188,8 +188,8 @@ with tab2:
         monthly_inv = st.number_input("毎月の積立額 (万円)", 0, 100, 10)
         
         st.markdown("**期待利回り (%)**")
-        ret_pre = st.slider("積立期 (年利)", 0.0, 15.0, 5.0)
-        ret_post = st.slider("リタイア後 (年利)", 0.0, 15.0, 3.0)
+        ret_pre = st.number_input("積立期 (年利)", 0.0, 100.0, 5.0, step=0.1)
+        ret_post = st.number_input("リタイア後 (年利)", 0.0, 100.0, 3.0, step=0.1)
         
         st.markdown("**リタイア後の支出・収入**")
         fire_age = st.number_input("リタイア希望年齢", 18, 100, 50, key="fire_age_input")
@@ -199,7 +199,7 @@ with tab2:
         living_exp_monthly = exp_val if exp_type == "月額" else exp_val / 12
         
         pension_val = st.number_input("受給年金額 (月額/万円)", 0, 50, 15)
-        inf_rate = st.slider("想定インフレ率 (%)", 0.0, 10.0, 1.0)
+        inf_rate = st.number_input("想定インフレ率 (%)", 0.0, 100.0, 1.0, step=0.1)
 
         if st.button("✨ 最短FIRE年齢を計算する", use_container_width=True):
             sim_rev = FIRESimulator()

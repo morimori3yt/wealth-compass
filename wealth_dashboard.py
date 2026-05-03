@@ -3,11 +3,15 @@ import feedparser
 import urllib.parse
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
+import yfinance as yf
 from simulation_logic import FIRESimulator
+import datetime
+import io
 
 # --- ページ設定 ---
 st.set_page_config(
-    page_title="資産形成の羅針盤 | 米国株ニュース & FIRE",
+    page_title="資産形成の羅針盤 | マーケット実況 & FIRE",
     page_icon="🧭",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -20,18 +24,16 @@ st.markdown("""
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap');
 html, body, [class*="css"] { font-family: 'Inter', 'Noto Sans JP', sans-serif; }
 .main { background-color: #0e1117; }
-.news-card { background: #1e2128; padding: 1.8rem; border-radius: 12px; border: 1px solid #30363d; margin-bottom: 1.5rem; }
-.news-title { font-size: 1.3rem; font-weight: 700; color: #ffffff; margin-bottom: 0.8rem; }
-.ad-banner-frame { background: linear-gradient(135deg, #004bb1 0%, #002d6b 100%); border: 2px solid #1f6feb; padding: 1.5rem; border-radius: 16px; text-align: center; margin: 2.5rem 0; box-shadow: 0 10px 25px rgba(31, 111, 235, 0.3); }
-.ad-sub-text { color: #ffffff; font-size: 0.9rem; opacity: 0.9; margin-bottom: 1rem; }
-@media (max-width: 768px) { .stMarkdown h1 { font-size: 1.5rem !important; } .ad-banner-frame img { max-width: 100%; height: auto; } }
+.market-card { background: #1e2128; padding: 1rem; border-radius: 8px; border: 1px solid #30363d; margin-bottom: 0.5rem; }
+.price-up { color: #00c805; font-weight: bold; }
+.price-down { color: #ff3b30; font-weight: bold; }
 </style>
 """, unsafe_allow_html=True)
 
-# --- セッション状態 ---
+# --- セッション状態の初期化 ---
 if 'fire_age_val' not in st.session_state: st.session_state.fire_age_val = 50
 
-# --- ニュース取得 ---
+# --- データ取得関数 ---
 @st.cache_data(ttl=3600)
 def fetch_news(keyword):
     encoded_keyword = urllib.parse.quote(keyword)
@@ -41,109 +43,180 @@ def fetch_news(keyword):
         return feed.entries
     except: return []
 
-# --- コンテンツ ---
-st.title("🧭 資産形成の羅針盤 (Wealth Compass)")
-st.markdown("### 米国株・経済ニュース × FIREシミュレーション")
-tab1, tab2 = st.tabs(["🇺🇸 最新ニュース", "🚀 FIREシミュレーター"])
+@st.cache_data(ttl=600)
+def get_market_data(ticker_symbol, period="1mo"):
+    try:
+        ticker = yf.Ticker(ticker_symbol)
+        df = ticker.history(period=period)
+        return df
+    except: return pd.DataFrame()
 
-with tab1:
-    st.header("マーケット最新トピックス")
-    col1, col2, col3, col4 = st.columns(4)
-    with col1:
-        if st.button("📈 米国株", use_container_width=True): st.session_state.kw = "米国株式市場"
-    with col2:
-        if st.button("🏦 金利・中央銀行", use_container_width=True): st.session_state.kw = "FRB 金利 政策金利"
-    with col3:
-        if st.button("📉 インフレ指標", use_container_width=True): st.session_state.kw = "米国 CPI 物価"
-    with col4:
-        if st.button("💻 ハイテク・AI", use_container_width=True): st.session_state.kw = "NVIDIA AI株 マグニフィセント・セブン"
+@st.cache_data(ttl=3600*24)
+def get_earnings_calendar():
+    # 主要銘柄の決算予定を簡易的に取得
+    tickers = {
+        "トヨタ": "7203.T", "ソニー": "6758.T", "ソフトバンクG": "9984.T",
+        "Apple": "AAPL", "Microsoft": "MSFT", "Google": "GOOGL", 
+        "Amazon": "AMZN", "NVIDIA": "NVDA", "Tesla": "TSLA"
+    }
+    events = []
+    for name, symbol in tickers.items():
+        try:
+            t = yf.Ticker(symbol)
+            cal = t.calendar
+            if cal is not None and not cal.empty:
+                # 辞書形式またはDataFrame形式で返る場合がある
+                e_date = cal.iloc[0,0] if hasattr(cal, 'iloc') else cal.get('Earnings Date', [None])[0]
+                if e_date:
+                    events.append({
+                        "日付": e_date.strftime('%Y-%m-%d'),
+                        "国": "JP" if ".T" in symbol else "US",
+                        "イベント": f"{name} ({symbol}) 決算発表"
+                    })
+        except: continue
+    return events
 
-    current_kw = st.session_state.get('kw', '米国株式市場')
-    st.markdown(f'<div class="ad-banner-frame"><div class="ad-sub-text">資産形成の必需品は楽天市場でチェック</div><a href="https://rpx.a8.net/svt/ejp?a8mat=4B3GYD+C0U5KI+2HOM+69P01&rakuten=y&a8ejpredirect=http%3A%2F%2Fhb.afl.rakuten.co.jp%2Fhgc%2F0ea62065.34400275.0ea62066.204f04c0%2Fa26050208529_4B3GYD_C0U5KI_2HOM_69P01%3Fpc%3Dhttp%253A%252F%252Fwww.rakuten.co.jp%252F%26m%3Dhttp%253A%252F%252Fm.rakuten.co.jp%252F" rel="nofollow"><img src="https://hbb.afl.rakuten.co.jp/hsb/0eb4bbc7.e9e6f789.0eb4bbaa.95151395/" border="0" style="border-radius: 4px;"></a><img border="0" width="1" height="1" src="https://www12.a8.net/0.gif?a8mat=4B3GYD+C0U5KI+2HOM+69P01" alt=""></div>', unsafe_allow_html=True)
+# --- メインコンテンツ ---
+st.title("🧭 資産形成の羅針盤 (Wealth Compass) Ver 2.0")
 
-    with st.spinner("ニュース取得中..."): news = fetch_news(current_kw)
-    if not news: st.info("記事なし")
+tabs = st.tabs(["📊 マーケット実況", "📅 カレンダー", "🚀 FIREシミュレーター", "🇺🇸 ニュース"])
+
+# --- Tab 1: マーケット実況 ---
+with tabs[0]:
+    st.header("マーケット実況（日米主要指数）")
+    indices = {
+        "日経平均": "^N225", "TOPIX": "^TPX", "グロース250": "1552.T",
+        "NYダウ": "^DJI", "S&P 500": "^GSPC", "ナスダック": "^IXIC",
+        "ドル円": "JPY=X", "米国10年債": "^TNX", "ビットコイン": "BTC-USD"
+    }
+    
+    cols = st.columns(3)
+    for i, (name, symbol) in enumerate(indices.items()):
+        with cols[i % 3]:
+            df = get_market_data(symbol)
+            if not df.empty:
+                current_price = df['Close'].iloc[-1]
+                prev_price = df['Close'].iloc[-2]
+                diff = current_price - prev_price
+                pct = (diff / prev_price) * 100
+                color = "price-up" if diff >= 0 else "price-down"
+                sign = "+" if diff >= 0 else ""
+                
+                st.markdown(f"""
+                <div class="market-card">
+                    <div style="font-size: 0.85rem; color: #8b949e;">{name}</div>
+                    <div style="font-size: 1.4rem; font-weight: 700;">{current_price:,.2f}</div>
+                    <div class="{color}" style="font-size: 0.9rem;">{sign}{diff:,.2f} ({sign}{pct:.2f}%)</div>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                fig = px.line(df, x=df.index, y='Close', template="plotly_dark", height=120)
+                fig.update_layout(margin=dict(l=0, r=0, t=0, b=0), xaxis_visible=False, yaxis_visible=False, showlegend=False)
+                st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+
+# --- Tab 2: カレンダー ---
+with tabs[1]:
+    st.header("経済・決算カレンダー")
+    col_c1, col_c2 = st.columns(2)
+    with col_c1: show_jp = st.checkbox("日本を表示", value=True)
+    with col_c2: show_us = st.checkbox("米国を表示", value=True)
+    
+    # 経済イベント（静的）
+    static_events = [
+        {"日付": "2024-05-15", "国": "US", "イベント": "米消費者物価指数 (CPI) 発表"},
+        {"日付": "2024-05-22", "国": "US", "イベント": "FOMC議事録要旨公開"},
+        {"日付": "2024-06-07", "国": "US", "イベント": "米雇用統計発表"},
+        {"日付": "2024-05-25", "国": "JP", "イベント": "日本 消費者物価指数 (CPI)"},
+        {"日付": "2024-06-14", "国": "JP", "イベント": "日銀金融政策決定会合 結果発表"},
+    ]
+    
+    # 決算イベント（動的取得）
+    with st.spinner("主要企業の決算予定を取得中..."):
+        dynamic_events = get_earnings_calendar()
+    
+    all_events = static_events + dynamic_events
+    df_ev = pd.DataFrame(all_events).sort_values("日付")
+    
+    # フィルタリング
+    mask = pd.Series([False] * len(df_ev))
+    if show_jp: mask |= (df_ev['国'] == 'JP')
+    if show_us: mask |= (df_ev['国'] == 'US')
+    
+    display_df = df_ev[mask]
+    if not display_df.empty:
+        st.table(display_df.reset_index(drop=True))
     else:
-        for i, entry in enumerate(news[:15]):
-            if i > 0 and i % 5 == 0:
-                st.markdown(f'<div class="ad-banner-frame" style="background: rgba(30, 33, 40, 0.8); border-color: #30363d; display: flex; align-items: center; justify-content: center; gap: 20px;"><div style="text-align: left;"><div style="font-weight:700; color:white; font-size:1rem;">楽天市場</div><div style="color:#8b949e; font-size:0.8rem;">お買い物なら楽天市場へ</div></div><a href="https://rpx.a8.net/svt/ejp?a8mat=4B3GYD+C0U5KI+2HOM+5ZU29&rakuten=y&a8ejpredirect=http%3A%2F%2Fhb.afl.rakuten.co.jp%2Fhgc%2F0ea62065.34400275.0ea62066.204f04c0%2Fa26050208529_4B3GYD_C0U5KI_2HOM_5ZU29%3Fpc%3Dhttp%253A%252F%252Fwww.rakuten.co.jp%252F%26m%3Dhttp%253A%252F%252Fm.rakuten.co.jp%252F" rel="nofollow"><img src="https://hbb.afl.rakuten.co.jp/hsb/0eb4bbb2.58d658fd.0eb4bbaa.95151395/" border="0" style="border-radius: 4px;"></a><img border="0" width="1" height="1" src="https://www16.a8.net/0.gif?a8mat=4B3GYD+C0U5KI+2HOM+5ZU29" alt=""></div>', unsafe_allow_html=True)
-            st.markdown(f'<div class="news-card"><div class="news-title">{entry.title}</div><div class="news-date">🗓 {entry.published}</div><a href="{entry.link}" target="_blank" class="news-link">記事の詳細を確認する</a></div>', unsafe_allow_html=True)
+        st.info("表示する予定がありません。")
 
-with tab2:
-    st.header("FIRE Simulator")
-    col_input, col_chart = st.columns([1, 2])
-    with col_input:
+# --- Tab 3: FIREシミュレーター ---
+with tabs[2]:
+    st.header("FIRE Simulator Pro")
+    c_in, c_chart = st.columns([1, 2])
+    
+    with c_in:
         st.subheader("条件設定")
         age = st.number_input("現在の年齢", 18, 80, 30)
-        st.markdown("**運用資産額 (万円)**")
-        c_reg, c_nisa = st.columns(2)
-        with c_reg: reg_assets = st.number_input("特定口座", 0.00, 100000.00, 400.00, step=0.01)
-        with c_nisa: nisa_assets = st.number_input("NISA口座", 0.00, 100000.00, 100.00, step=0.01)
-        monthly_inv = st.number_input("毎月の積立額 (万円)", 0.00, 100.00, 10.00, step=0.01)
-        ret_pre = st.number_input("積立期 (年利%)", 0.0, 100.0, 5.0, step=0.1)
-        ret_post = st.number_input("リタイア後 (年利%)", 0.0, 100.0, 3.0, step=0.1)
-        st.markdown("**リタイア・老後設定**")
+        reg_assets = st.number_input("特定口座 (万円)", 0.00, 100000.00, 400.00)
+        nisa_assets = st.number_input("NISA口座 (万円)", 0.00, 100000.00, 100.00)
+        monthly_inv = st.number_input("毎月の積立額 (万円)", 0.00, 100.00, 10.00)
+        
+        st.markdown("**通常(Base)利回り (%)**")
+        ret_pre = st.number_input("積立期", 0.0, 20.0, 5.0)
+        ret_post = st.number_input("リタイア後", 0.0, 20.0, 3.0)
+        
+        with st.expander("強気・弱気シナリオの利回り調整"):
+            bull_diff = st.slider("強気シナリオの上乗せ利回り", 0.0, 5.0, 2.0)
+            bear_diff = st.slider("弱気シナリオの下振れ利回り", 0.0, 5.0, 2.0)
+        
         fire_age = st.number_input("リタイア希望年齢", 18, 100, st.session_state.fire_age_val)
-        retirement_allowance = st.number_input("想定退職金 (万円)", 0.00, 10000.00, 0.00, step=0.01)
-        exp_type = st.radio("生活費の単位", ["月額", "年額"], horizontal=True)
-        exp_val = st.number_input(f"生活費 ({exp_type})", 0.00, 2000.00, 25.00 if exp_type == "月額" else 300.00, step=0.01)
-        living_exp_monthly = exp_val if exp_type == "月額" else exp_val / 12
-        c_p1, c_p2 = st.columns(2)
-        with c_p1: pension_age = st.number_input("年金受給開始年齢", 60, 75, 65)
-        with c_p2: pension_val = st.number_input("受給年金額 (月額)", 0.00, 50.00, 15.00, step=0.01)
-        inf_rate = st.number_input("想定インフレ率 (%)", 0.0, 100.0, 1.0, step=0.1)
-        if st.button("✨ 最短FIRE年齢を計算する", use_container_width=True):
-            sim_rev = FIRESimulator()
-            best_age = sim_rev.find_possible_fire_age({
-                'currentAge': age, 'currentAssets': reg_assets + nisa_assets, 'nisaAssets': nisa_assets,
-                'monthlyInvestment': monthly_inv, 'expectedReturnPre': ret_pre, 'livingExpense': living_exp_monthly,
-                'expectedReturnPost': ret_post, 'inflationRate': inf_rate, 
-                'pensionAmount': pension_val, 'pensionAge': pension_age, 'retirementAllowance': retirement_allowance
-            })
-            if best_age: st.session_state.fire_age_val = best_age; st.rerun()
+        retirement_allowance = st.number_input("想定退職金 (万円)", 0.00, 10000.00, 0.00)
+        living_exp = st.number_input("生活費 (月額/万円)", 0.0, 200.0, 25.0)
+        pension_val = st.number_input("受給年金 (月額/万円)", 0.0, 50.0, 15.0)
+        inf_rate = st.number_input("インフレ率 (%)", 0.0, 10.0, 1.0)
+        
+        show_scenarios = st.multiselect("表示するライン", ["通常", "強気", "弱気"], default=["通常", "強気", "弱気"])
 
-    with col_chart:
+    with c_chart:
         simulator = FIRESimulator()
-        res = simulator.calculate({
+        all_res = simulator.calculate({
             'currentAge': age, 'currentAssets': reg_assets + nisa_assets, 'nisaAssets': nisa_assets,
-            'monthlyInvestment': monthly_inv, 'expectedReturnPre': ret_pre, 'fireAge': fire_age,
-            'livingExpense': living_exp_monthly, 'expectedReturnPost': ret_post, 'inflationRate': inf_rate,
-            'pensionAmount': pension_val, 'pensionAge': pension_age, 'retirementAllowance': retirement_allowance
+            'monthlyInvestment': monthly_inv, 'expectedReturnPre': ret_pre, 'expectedReturnPost': ret_post,
+            'expectedReturnPreBull': ret_pre + bull_diff, 'expectedReturnPostBull': ret_post + bull_diff,
+            'expectedReturnPreBear': max(0, ret_pre - bear_diff), 'expectedReturnPostBear': max(0, ret_post - bear_diff),
+            'fireAge': fire_age, 'livingExpense': living_exp, 'inflationRate': inf_rate,
+            'pensionAmount': pension_val, 'retirementAllowance': retirement_allowance
         })
-        df = pd.DataFrame(res['history'])
-        df_plot = df.rename(columns={'regularAssets': '特定口座', 'nisaAssets': 'NISA口座'})
-        df_plot['合計'] = df_plot['特定口座'] + df_plot['NISA口座']
         
-        fig = px.area(df_plot, x='age', y=['特定口座', 'NISA口座'],
-                      title="100歳までの資産推移予測",
-                      labels={'value': '資産額 (万円)', 'age': '年齢', 'variable': '口座種別'},
-                      color_discrete_map={'特定口座': '#1f6feb', 'NISA口座': '#238636'},
-                      template="plotly_dark")
+        fig = go.Figure()
+        colors = {"通常": "#1f6feb", "強気": "#00c805", "弱気": "#ff3b30"}
+        for name in show_scenarios:
+            res = all_res[name]
+            df_h = pd.DataFrame(res['history'])
+            fig.add_trace(go.Scatter(x=df_h['age'], y=df_h['totalAssets'], name=name, line=dict(color=colors[name], width=3)))
         
-        # グラフ全体のレイアウト設定
-        fig.update_layout(
-            margin=dict(l=0, r=0, t=50, b=0),
-            hovermode="x unified",
-            xaxis=dict(
-                range=[age, 100],
-                tickformat=".0f",
-                ticksuffix="歳", # 軸のラベルに「歳」を追加
-                hoverformat=".0f歳" # ホバー時のヘッダーに「歳」を追加
-            ),
-            yaxis=dict(autorange=True, fixedrange=False, rangemode="tozero")
-        )
-
-        # ホバー表示の内訳設定
-        fig.update_traces(
-            hovertemplate="特定口座: %{customdata[0]:,.0f} 万円<br>NISA口座: %{customdata[1]:,.0f} 万円<br>合計: %{customdata[2]:,.0f} 万円",
-            customdata=df_plot[['特定口座', 'NISA口座', '合計']]
-        )
-        
+        fig.update_layout(title="将来資産の3シナリオ推移", xaxis_title="年齢", yaxis_title="資産額 (万円)", template="plotly_dark", hovermode="x unified")
         st.plotly_chart(fig, use_container_width=True)
+        
+        # 診断結果の並列表示
         st.subheader("診断レポート")
-        c1, c2 = st.columns(2)
-        with c1:
-            if res['exhaustionAge']: st.error(f"資産枯渇の予測: {res['exhaustionAge']}歳")
-            else: st.success("資産寿命: 100歳以上を維持")
-        with c2: st.metric("100歳時点の推定資産額", f"{res['finalAssets']:,.2f} 万円")
-        st.markdown(f'<div class="ad-banner-frame" style="border-color: #238636; background: linear-gradient(135deg, #1b4d2a 0%, #0d2b17 100%);"><div class="ad-sub-text">FIRE達成への近道を探す</div><a href="https://rpx.a8.net/svt/ejp?a8mat=4B3GYD+C0U5KI+2HOM+69P01&rakuten=y&a8ejpredirect=http%3A%2F%2Fhb.afl.rakuten.co.jp%2Fhgc%2F0ea62065.34400275.0ea62066.204f04c0%2Fa26050208529_4B3GYD_C0U5KI_2HOM_69P01%3Fpc%3Dhttp%253A%252F%252Fwww.rakuten.co.jp%252F%26m%3Dhttp%253A%252F%252Fm.rakuten.co.jp%252F" rel="nofollow"><img src="https://hbb.afl.rakuten.co.jp/hsb/0eb4bbc7.e9e6f789.0eb4bbaa.95151395/" border="0" style="border-radius: 4px;"></a><img border="0" width="1" height="1" src="https://www12.a8.net/0.gif?a8mat=4B3GYD+C0U5KI+2HOM+69P01" alt=""></div>', unsafe_allow_html=True)
+        r_cols = st.columns(len(show_scenarios) if show_scenarios else 1)
+        for idx, name in enumerate(show_scenarios):
+            res = all_res[name]
+            with r_cols[idx]:
+                st.info(f"**{name}**")
+                if res['exhaustionAge']: st.error(f"枯渇: {res['exhaustionAge']}歳")
+                else: st.success("100歳超え")
+                st.metric("最終資産", f"{res['finalAssets']:,.0f}万円")
+
+        # JPEG保存
+        if st.button("🖼 結果を画像(JPEG)で保存する"):
+            img_bytes = fig.to_image(format="jpg", width=1200, height=700)
+            st.download_button(label="画像をダウンロード", data=img_bytes, file_name=f"WealthCompass_{datetime.datetime.now().strftime('%Y%m%d')}.jpg", mime="image/jpeg")
+
+# --- Tab 4: ニュース ---
+with tabs[3]:
+    st.header("最新ニュース")
+    news_kw = st.selectbox("カテゴリ", ["米国株 経済", "日本株 市場", "ビットコイン 暗号資産"])
+    news_list = fetch_news(news_kw)
+    for n in news_list[:12]:
+        st.markdown(f'<div style="background: #1e2128; padding: 1rem; border-radius: 8px; margin-bottom: 0.8rem; border-left: 4px solid #1f6feb;"><b>{n.title}</b><br><small>{n.published}</small><br><a href="{n.link}" target="_blank">詳細</a></div>', unsafe_allow_html=True)

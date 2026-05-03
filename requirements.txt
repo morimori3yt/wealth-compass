@@ -1,4 +1,6 @@
 streamlit
-feedparser
-plotly
 pandas
+plotly
+feedparser
+yfinance
+kaleido

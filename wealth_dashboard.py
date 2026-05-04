@@ -154,7 +154,7 @@ with tabs[3]:
         c_reg = st.number_input("特定口座 (万円)", 0.0, 100000.0, 400.0)
         c_nisa = st.number_input("NISA口座 (万円)", 0.0, 100000.0, 100.0)
         
-        # 追加項目: NISA投資枠の残り
+        # NISA投資枠の残り
         nisa_rem = st.number_input("NISA投資枠の残り (万円)", 0.0, 1800.0, 1700.0)
         
         # 現在資産額合計
@@ -169,8 +169,8 @@ with tabs[3]:
         r_bull = st.number_input("強気時上乗せ (%)", 0.0, 10.0, 2.0)
         r_bear = st.number_input("弱気時下振れ (%)", 0.0, 10.0, 2.0)
         
-        # 追加項目: 特定口座の税率
-        tax_rate = st.number_input("特定口座の税率 (%)", 0.0, 100.0, 20.315, step=0.001)
+        # 特定口座の税率 (0.001単位まで対応)
+        tax_rate = st.number_input("特定口座の税率 (%)", 0.0, 100.0, 20.315, step=0.001, format="%.3f")
         
         f_age = st.number_input("FIRE年齢", 18, 100, 50)
         ret_al = st.number_input("想定退職金 (万円)", 0.0, 10000.0, 0.0)
@@ -178,13 +178,13 @@ with tabs[3]:
         p_val = st.number_input("年金月額 (万円)", 0.0, 50.0, 15.0)
         l_exp = st.number_input("生活費 (月額/万円)", 0.0, 200.0, 25.0)
         inf = st.number_input("インフレ率 (%)", 0.0, 10.0, 1.0)
-        show_scen = st.multiselect("シナリオ表示", ["通常", "強気", "弱気"], default=["通常", "強気", "弱気"])
+        show_scen = st.multiselect("シナシナリオ表示", ["通常", "強気", "弱気"], default=["通常", "強気", "弱気"])
 
     with f_out:
         sim = FIRESimulator()
         all_res = sim.calculate({
             'currentAge': age, 'currentAssets': total_curr, 'nisaAssets': c_nisa, 
-            'nisaLimitRemaining': nisa_rem, 'taxRate': tax_rate, # 新規パラメータ
+            'nisaLimitRemaining': nisa_rem, 'taxRate': tax_rate, 
             'monthlyInvestment': m_inv, 'expectedReturnPre': r_pre, 'expectedReturnPost': r_post, 
             'expectedReturnPreBull': r_pre + r_bull, 'expectedReturnPostBull': r_post + r_bull, 
             'expectedReturnPreBear': max(0, r_pre - r_bear), 'expectedReturnPostBear': max(0, r_post - r_bear), 

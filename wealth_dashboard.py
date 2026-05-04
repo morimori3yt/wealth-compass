@@ -123,14 +123,21 @@ with tabs[1]:
 # --- Tab 3: カレンダー ---
 with tabs[2]:
     st.subheader("経済・決算カレンダー")
+    
+    # 年月選択 (2020年から現在の翌年まで)
     now = datetime.datetime.now()
-    sel_year = st.selectbox("年を選択", range(2024, 2026), index=0)
+    year_range = list(range(2020, now.year + 2))
+    sel_year = st.selectbox("年を選択", year_range, index=year_range.index(now.year))
     sel_month = st.selectbox("月を選択", range(1, 13), index=now.month - 1)
+    
+    # フィルタ
     f_c1, f_c2, f_c3, f_c4 = st.columns(4)
     show_us_eco = f_c1.checkbox("米国経済指標", value=True)
     show_us_ear = f_c2.checkbox("米国株決算", value=True)
     show_jp_eco = f_c3.checkbox("日本経済指標", value=True)
     show_jp_ear = f_c4.checkbox("日本株決算", value=True)
+    
+    # データの生成
     cal_data = [{"日付": f"{sel_year}-{sel_month:02d}-05", "カテゴリ": "米国経済指標", "内容": "米雇用統計"}]
     st.table(pd.DataFrame(cal_data))
 
@@ -160,7 +167,7 @@ with tabs[3]:
         inf = st.number_input("想定インフレ率 (%)", 0.0, 10.0, 1.0)
         show_scen = st.multiselect("シナリオ表示", ["通常", "強気", "弱気"], default=["通常", "強気", "弱気"])
 
-        # 逆算機能ボタン (最下部へ移動)
+        # 逆算機能ボタン
         st.divider()
         if st.button("✨ 最短FIRE年齢を計算する", use_container_width=True):
             sim_rev = FIRESimulator()
@@ -172,7 +179,6 @@ with tabs[3]:
                 'livingExpense': l_exp, 'inflationRate': inf, 'pensionAmount': p_val, 'pensionAge': p_age, 'retirementAllowance': ret_al
             })
         
-        # 逆算結果の表示
         if st.session_state['rev_results']:
             res = st.session_state['rev_results']
             st.markdown(f"""

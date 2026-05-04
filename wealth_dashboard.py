@@ -169,16 +169,31 @@ with tabs[3]:
         r_bull = st.number_input("強気時上乗せ (%)", 0.0, 10.0, 2.0)
         r_bear = st.number_input("弱気時下振れ (%)", 0.0, 10.0, 2.0)
         
-        # 特定口座の税率 (0.001単位まで対応)
+        # 特定口座の税率
         tax_rate = st.number_input("特定口座の税率 (%)", 0.0, 100.0, 20.315, step=0.001, format="%.3f")
         
-        f_age = st.number_input("FIRE年齢", 18, 100, 50)
+        f_age = st.number_input("FIRE年齢", 18, 100, st.session_state.fire_age_val)
         ret_al = st.number_input("想定退職金 (万円)", 0.0, 10000.0, 0.0)
+        
+        # 逆算機能ボタン
+        if st.button("✨ 最短FIRE年齢を計算する", use_container_width=True):
+            sim_rev = FIRESimulator()
+            best_age = sim_rev.find_possible_fire_age({
+                'currentAge': age, 'currentAssets': total_curr, 'nisaAssets': c_nisa, 
+                'nisaLimitRemaining': nisa_rem, 'taxRate': tax_rate,
+                'monthlyInvestment': m_inv, 'expectedReturnPre': r_pre, 'expectedReturnPost': r_post,
+                'livingExpense': 25.0, # デフォルト値（後の入力値で上書きされるが計算用）
+                'inflationRate': 1.0, 'pensionAmount': 15.0, 'pensionAge': 65, 'retirementAllowance': ret_al
+            })
+            if best_age:
+                st.session_state.fire_age_val = best_age
+                st.rerun()
+
         p_age = st.number_input("年金開始年齢", 60, 75, 65)
         p_val = st.number_input("年金月額 (万円)", 0.0, 50.0, 15.0)
         l_exp = st.number_input("生活費 (月額/万円)", 0.0, 200.0, 25.0)
-        inf = st.number_input("インフレ率 (%)", 0.0, 10.0, 1.0)
-        show_scen = st.multiselect("シナシナリオ表示", ["通常", "強気", "弱気"], default=["通常", "強気", "弱気"])
+        inf = st.number_input("想定インフレ率 (%)", 0.0, 10.0, 1.0)
+        show_scen = st.multiselect("シナリオ表示", ["通常", "強気", "弱気"], default=["通常", "強気", "弱気"])
 
     with f_out:
         sim = FIRESimulator()

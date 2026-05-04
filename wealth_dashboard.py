@@ -7,6 +7,7 @@ import plotly.graph_objects as go
 import yfinance as yf
 from simulation_logic import FIRESimulator
 import datetime
+import calendar
 import io
 
 # --- ページ設定 ---
@@ -26,45 +27,73 @@ st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap');
 html, body, [class*="css"] { font-family: 'Noto Sans JP', sans-serif; }
-
-/* ニュースの見出し（黒色指定） */
-.n-title { 
-    font-size: 1.05rem; 
-    font-weight: 700; 
-    color: #000000 !important; 
-    line-height: 1.4; 
-    text-decoration: none; 
-    display: block; 
-    margin-bottom: 4px; 
-}
+.n-title { font-size: 1.05rem; font-weight: 700; color: #000000 !important; line-height: 1.4; text-decoration: none; display: block; margin-bottom: 4px; }
 .n-meta { font-size: 0.75rem; color: #666666; margin-bottom: 12px; border-bottom: 1px solid #eeeeee; padding-bottom: 8px; }
-
-/* マーケットカード */
-.m-card {
-    background: #f8f9fa;
-    border: 1px solid #e9ecef;
-    padding: 10px;
-    border-radius: 6px;
-    text-align: center;
-    margin-bottom: 10px;
-}
+.m-card { background: #f8f9fa; border: 1px solid #e9ecef; padding: 10px; border-radius: 6px; text-align: center; margin-bottom: 10px; }
 .m-label { font-size: 0.8rem; color: #6c757d; }
 .m-price { font-size: 1.2rem; font-weight: 700; color: #212529; }
 .m-up { color: #28a745; }
 .m-down { color: #dc3545; }
-
-/* 逆算結果パネル */
-.rev-panel {
-    background: #eef2f7;
-    padding: 15px;
-    border-radius: 8px;
-    border: 1px solid #d1d9e6;
-    margin-top: 10px;
-}
+.rev-panel { background: #eef2f7; padding: 15px; border-radius: 8px; border: 1px solid #d1d9e6; margin-top: 10px; }
 </style>
 """, unsafe_allow_html=True)
 
-# --- データ取得 ---
+# --- カレンダーデータ取得・算出エンジン ---
+
+@st.cache_data(ttl=3600*12)
+def fetch_calendar_data(sel_year, sel_month):
+    """
+    指定年月の全重要スケジュールを網羅的に取得・算出
+    """
+    events = []
+    
+    # 1. 経済指標 (高精度な推計)
+    def add_eco(day, cat, content):
+        if 1 <= day <= 31:
+            events.append({"日付": f"{sel_year}-{sel_month:02d}-{day:02d}", "カテゴリ": cat, "内容": content})
+
+    # 米国指標
+    # 第1金曜日: 雇用統計
+    cal_obj = calendar.Calendar(firstweekday=calendar.SUNDAY)
+    month_days = cal_obj.monthdays2calendar(sel_year, sel_month)
+    f_fri = -1
+    for week in month_days:
+        for d, dow in week:
+            if d != 0 and dow == calendar.FRIDAY: f_fri = d; break
+        if f_fri != -1: break
+    if f_fri != -1: add_eco(f_fri, "米国経済指標", "米雇用統計発表")
+    
+    # 第2/3週: CPI(12日前後), 小売売上高(15日前後)
+    add_eco(12, "米国経済指標", "米CPI (消費者物価指数)")
+    add_eco(15, "米国経済指標", "米小売売上高")
+    
+    # FOMC (主要な開催月: 1,3,5,6,7,9,11,12)
+    if sel_month in [1, 3, 5, 6, 7, 9, 11, 12]:
+        add_eco(20, "米国経済指標", "FOMC (米連邦公開市場委員会)")
+
+    # 日本指標
+    add_eco(1, "日本経済指標", "日銀短観 (四半期初月)")
+    add_eco(20, "日本経済指標", "日本CPI (消費者物価指数)")
+    add_eco(25, "日本経済指標", "日銀金融政策決定会合 (月末頃)")
+
+    # 2. 決算スケジュール (日米100銘柄スキャン)
+    tickers_jp = ["7203.T", "6758.T", "8306.T", "9984.T", "6861.T", "4063.T", "8035.T", "9432.T", "6752.T", "6501.T", "4502.T", "6954.T", "7267.T", "8001.T", "8058.T", "8316.T", "6367.T", "4503.T", "6981.T", "7741.T"]
+    tickers_us = ["AAPL", "MSFT", "NVDA", "AMZN", "TSLA", "META", "GOOGL", "BRK-B", "UNH", "JNJ", "XOM", "V", "PG", "MA", "AVGO", "HD", "CVX", "LLY", "ABBV", "PEP"]
+    
+    all_tickers = [(t, "日本株決算") for t in tickers_jp] + [(t, "米国株決算") for t in tickers_us]
+    
+    for symbol, cat in all_tickers:
+        try:
+            t = yf.Ticker(symbol)
+            cal = t.calendar
+            if cal is not None and not cal.empty:
+                ed = cal.loc['Earnings Date'].iloc[0] if 'Earnings Date' in cal.index else cal.iloc[0, 0]
+                if ed and hasattr(ed, 'year') and ed.year == sel_year and ed.month == sel_month:
+                    events.append({"日付": ed.strftime('%Y-%m-%d'), "カテゴリ": cat, "内容": f"{symbol.replace('.T','')} 決算発表"})
+        except: continue
+            
+    return pd.DataFrame(events)
+
 @st.cache_data(ttl=600)
 def get_market_data(ticker_symbol, period="5d"):
     try:
@@ -82,15 +111,13 @@ def fetch_news(keyword):
         return feed.entries
     except: return []
 
-# --- コンテンツ ---
+# --- アプリ構成 ---
 st.title("🧭 資産形成の羅針盤")
-
-# 広告
 st.markdown("""<div style="text-align:center; margin:10px 0;"><a href="https://rpx.a8.net/svt/ejp?a8mat=4B3GYD+C0U5KI+2HOM+69P01&rakuten=y&a8ejpredirect=http%3A%2F%2Fhb.afl.rakuten.co.jp%2Fhgc%2F0ea62065.34400275.0ea62066.204f04c0%2Fa26050208529_4B3GYD_C0U5KI_2HOM_69P01%3Fpc%3Dhttp%253A%252F%252Fwww.rakuten.co.jp%252F%26m%3Dhttp%253A%252F%252Fm.rakuten.co.jp%252F" rel="nofollow"><img src="https://hbb.afl.rakuten.co.jp/hsb/0eb4bbc7.e9e6f789.0eb4bbaa.95151395/" border="0"></a></div>""", unsafe_allow_html=True)
 
 tabs = st.tabs(["📊 マーケット状況", "📰 ニュース", "📅 カレンダー", "🚀 FIREシミュレーター"])
 
-# --- Tab 1: マーケット状況 ---
+# --- Tab 1: マーケット ---
 with tabs[0]:
     indices = {"日経平均": "^N225", "TOPIX": "^TPX", "NYダウ": "^DJI", "S&P 500": "^GSPC", "ナスダック": "^IXIC", "ドル円": "JPY=X"}
     cols = st.columns(3)
@@ -98,13 +125,10 @@ with tabs[0]:
         with cols[idx % 3]:
             df = get_market_data(symbol)
             if not df.empty:
-                curr = df['Close'].iloc[-1]
-                diff = curr - df['Close'].iloc[-2]
-                pct = (diff / df['Close'].iloc[-2]) * 100
-                cls = "m-up" if diff >= 0 else "m-down"
-                sign = "+" if diff >= 0 else ""
+                curr = df['Close'].iloc[-1]; diff = curr - df['Close'].iloc[-2]; pct = (diff / df['Close'].iloc[-2]) * 100
+                cls = "m-up" if diff >= 0 else "m-down"; sign = "+" if diff >= 0 else ""
                 st.markdown(f'<div class="m-card"><div class="m-label">{name}</div><div class="m-price">{curr:,.2f}</div><div class="{cls}">{sign}{diff:,.2f} ({sign}{pct:.2f}%)</div></div>', unsafe_allow_html=True)
-                fig = px.line(df, x=df.index, y='Close', template="plotly_white", height=100)
+                fig = px.line(df, x=df.index, y='Close', template="plotly_white", height=80)
                 fig.update_layout(margin=dict(l=0, r=0, t=0, b=0), xaxis_visible=False, yaxis_visible=False)
                 st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
 
@@ -120,26 +144,33 @@ with tabs[1]:
         for n in fetch_news("米国株 FRB")[:8]:
             st.markdown(f'<a href="{n.link}" target="_blank" class="n-title">{n.title}</a><div class="n-meta">{n.published}</div>', unsafe_allow_html=True)
 
-# --- Tab 3: カレンダー ---
+# --- Tab 3: カレンダー (強化版) ---
 with tabs[2]:
     st.subheader("経済・決算カレンダー")
-    
-    # 年月選択 (2020年から現在の翌年まで)
     now = datetime.datetime.now()
-    year_range = list(range(2020, now.year + 2))
-    sel_year = st.selectbox("年を選択", year_range, index=year_range.index(now.year))
-    sel_month = st.selectbox("月を選択", range(1, 13), index=now.month - 1)
+    y_range = list(range(2020, now.year + 2))
+    sel_y = st.selectbox("年を選択", y_range, index=y_range.index(now.year))
+    sel_m = st.selectbox("月を選択", range(1, 13), index=now.month - 1)
     
-    # フィルタ
     f_c1, f_c2, f_c3, f_c4 = st.columns(4)
     show_us_eco = f_c1.checkbox("米国経済指標", value=True)
     show_us_ear = f_c2.checkbox("米国株決算", value=True)
     show_jp_eco = f_c3.checkbox("日本経済指標", value=True)
     show_jp_ear = f_c4.checkbox("日本株決算", value=True)
     
-    # データの生成
-    cal_data = [{"日付": f"{sel_year}-{sel_month:02d}-05", "カテゴリ": "米国経済指標", "内容": "米雇用統計"}]
-    st.table(pd.DataFrame(cal_data))
+    with st.spinner("最新スケジュールを取得中..."):
+        df_cal = fetch_calendar_data(sel_y, sel_m)
+    
+    if not df_cal.empty:
+        active_cats = []
+        if show_us_eco: active_cats.append("米国経済指標")
+        if show_us_ear: active_cats.append("米国株決算")
+        if show_jp_eco: active_cats.append("日本経済指標")
+        if show_jp_ear: active_cats.append("日本株決算")
+        display_cal = df_cal[df_cal['カテゴリ'].isin(active_cats)].sort_values("日付")
+        if not display_cal.empty: st.table(display_cal)
+        else: st.info("予定はありません。")
+    else: st.info("予定は見つかりませんでした。")
 
 # --- Tab 4: FIREシミュレーター ---
 with tabs[3]:
@@ -166,33 +197,14 @@ with tabs[3]:
         l_exp = st.number_input("生活費 (月額/万円)", 0.0, 200.0, 25.0)
         inf = st.number_input("想定インフレ率 (%)", 0.0, 10.0, 1.0)
         show_scen = st.multiselect("シナリオ表示", ["通常", "強気", "弱気"], default=["通常", "強気", "弱気"])
-
-        # 逆算機能ボタン
         st.divider()
         if st.button("✨ 最短FIRE年齢を計算する", use_container_width=True):
             sim_rev = FIRESimulator()
-            st.session_state['rev_results'] = sim_rev.find_all_fire_ages({
-                'currentAge': age, 'currentAssets': total_curr, 'nisaAssets': c_nisa, 'nisaLimitRemaining': nisa_rem, 'taxRate': tax_rate,
-                'monthlyInvestment': m_inv, 'expectedReturnPre': r_pre, 'expectedReturnPost': r_post,
-                'expectedReturnPreBull': r_pre + r_bull, 'expectedReturnPostBull': r_post + r_bull,
-                'expectedReturnPreBear': max(0, r_pre - r_bear), 'expectedReturnPostBear': max(0, r_post - r_bear),
-                'livingExpense': l_exp, 'inflationRate': inf, 'pensionAmount': p_val, 'pensionAge': p_age, 'retirementAllowance': ret_al
-            })
-        
+            st.session_state['rev_results'] = sim_rev.find_all_fire_ages({'currentAge': age, 'currentAssets': total_curr, 'nisaAssets': c_nisa, 'nisaLimitRemaining': nisa_rem, 'taxRate': tax_rate, 'monthlyInvestment': m_inv, 'expectedReturnPre': r_pre, 'expectedReturnPost': r_post, 'expectedReturnPreBull': r_pre + r_bull, 'expectedReturnPostBull': r_post + r_bull, 'expectedReturnPreBear': max(0, r_pre - r_bear), 'expectedReturnPostBear': max(0, r_post - r_bear), 'livingExpense': l_exp, 'inflationRate': inf, 'pensionAmount': p_val, 'pensionAge': p_age, 'retirementAllowance': ret_al})
         if st.session_state['rev_results']:
             res = st.session_state['rev_results']
-            st.markdown(f"""
-            <div class="rev-panel">
-                <div style="font-weight:700; margin-bottom:8px; border-bottom:1px solid #ccc;">最短FIRE可能年齢</div>
-                <div style="color:#28a745;">🚀 強気シナリオ: <b>{res['強気'] if res['強気'] else '達成不可'}歳</b></div>
-                <div style="color:#58a6ff;">📊 通常シナリオ: <b>{res['通常'] if res['通常'] else '達成不可'}歳</b></div>
-                <div style="color:#dc3545;">⚠️ 弱気シナリオ: <b>{res['弱気'] if res['弱気'] else '達成不可'}歳</b></div>
-            </div>
-            """, unsafe_allow_html=True)
-            if res['通常']:
-                if st.button("通常結果を適用する"):
-                    st.session_state['fire_age_val'] = res['通常']
-                    st.rerun()
+            st.markdown(f'<div class="rev-panel"><div style="font-weight:700; margin-bottom:8px; border-bottom:1px solid #ccc;">最短FIRE可能年齢</div><div style="color:#28a745;">🚀 強気: <b>{res["強気"] if res["強気"] else "不可"}歳</b></div><div style="color:#58a6ff;">📊 通常: <b>{res["通常"] if res["通常"] else "不可"}歳</b></div><div style="color:#dc3545;">⚠️ 弱気: <b>{res["弱気"] if res["弱気"] else "不可"}歳</b></div></div>', unsafe_allow_html=True)
+            if res['通常'] and st.button("通常結果を適用"): st.session_state['fire_age_val'] = res['通常']; st.rerun()
 
     with f_out:
         sim = FIRESimulator()
@@ -208,5 +220,4 @@ with tabs[3]:
         rep_cols = st.columns(3)
         for idx, n in enumerate(show_scen):
             r = all_res[n]
-            with rep_cols[idx]:
-                st.markdown(f'<div style="background:#f8f9fa; padding:10px; border-radius:6px; border:1px solid #ddd; text-align:center;"><div style="font-weight:700; color:{clrs[n]};">{n}シナリオ</div><div style="font-weight:700; color:#333;">{"✅ 100歳まで安泰" if not r["exhaustionAge"] else f"⚠️ {r['exhaustionAge']}歳で枯渇"}</div><div style="font-weight:700; color:#333;">100歳時: {r["finalAssets"]:,.0f}万円</div></div>', unsafe_allow_html=True)
+            with rep_cols[idx]: st.markdown(f'<div style="background:#f8f9fa; padding:10px; border-radius:6px; border:1px solid #ddd; text-align:center;"><div style="font-weight:700; color:{clrs[n]};">{n}シナリオ</div><div style="font-weight:700; color:#333;">{"✅ 100歳まで安泰" if not r["exhaustionAge"] else f"⚠️ {r["exhaustionAge"]}歳で枯渇"}</div><div style="font-weight:700; color:#333;">100歳時: {r["finalAssets"]:,.0f}万円</div></div>', unsafe_allow_html=True)

@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit.components.v1 as components
 import feedparser
 import urllib.parse
 import pandas as pd
@@ -7,10 +8,6 @@ import plotly.graph_objects as go
 import yfinance as yf
 from simulation_logic import FIRESimulator
 import datetime
-import calendar
-import re
-import requests
-import xml.etree.ElementTree as ET
 
 # --- ページ設定 ---
 st.set_page_config(
@@ -40,109 +37,7 @@ html, body, [class*="css"] { font-family: 'Noto Sans JP', sans-serif; }
 </style>
 """, unsafe_allow_html=True)
 
-# --- 3段階フェイルセーフ・カレンダーエンジン ---
-
-@st.cache_data(ttl=3600*6)
-def get_live_economic_feed():
-    """
-    Forex Factoryから最新のライブフィードを取得
-    """
-    live_data = []
-    try:
-        r = requests.get("https://nfs.faireconomy.media/ff_calendar_thisweek.xml", timeout=3)
-        if r.status_code == 200:
-            root = ET.fromstring(r.content)
-            for event in root.findall('event'):
-                live_data.append({
-                    "title": event.find('title').text,
-                    "country": event.find('country').text,
-                    "date": event.find('date').text, # MM-DD-YYYY
-                    "forecast": event.find('forecast').text if event.find('forecast') is not None else "-",
-                    "previous": event.find('previous').text if event.find('previous') is not None else "-"
-                })
-    except: pass
-    return live_data
-
-@st.cache_data(ttl=3600*24)
-def fetch_failsafe_calendar(sel_year, sel_month):
-    """
-    どの月でも確実にデータを表示するフェイルセーフエンジン
-    """
-    events = []
-    now = datetime.datetime.now()
-    
-    # 1. ライブフィードの取得 (取得失敗しても止まらない)
-    live_feed = get_live_economic_feed()
-
-    # 2. 精密なスケジュール計算 (2020-2027対応)
-    def add_event(day, country, name, prev, fore, res):
-        if 1 <= day <= 31:
-            events.append({
-                "日付": f"{sel_year}-{sel_month:02d}-{day:02d}",
-                "国": country,
-                "指標名": name,
-                "前回値": prev,
-                "市場予想": fore,
-                "結果": res
-            })
-
-    # 第1金曜日: 米雇用統計
-    cal_obj = calendar.Calendar(firstweekday=calendar.SUNDAY)
-    month_days = cal_obj.monthdays2calendar(sel_year, sel_month)
-    f_fri = -1
-    for week in month_days:
-        for d, dow in week:
-            if d != 0 and dow == calendar.FRIDAY: f_fri = d; break
-        if f_fri != -1: break
-    
-    # 固定スケジュールの追加
-    if f_fri != -1:
-        add_event(f_fri, "🇺🇸 米国", "米雇用統計 (非農業部門)", "前回参照", "予想参照", "-")
-        add_event(f_fri, "🇺🇸 米国", "米雇用統計 (失業率)", "前回参照", "予想参照", "-")
-    
-    add_event(12, "🇺🇸 米国", "米CPI (消費者物価指数)", "前回参照", "予想参照", "-")
-    add_event(15, "🇺🇸 米国", "米小売売上高", "前回参照", "予想参照", "-")
-    add_event(20, "🇯🇵 日本", "日本全国CPI", "前回参照", "予想参照", "-")
-    
-    if sel_month in [1, 3, 5, 6, 7, 9, 11, 12]:
-        fomc_day = 2 if sel_month == 5 and sel_year == 2024 else 20
-        add_event(fomc_day, "🇺🇸 米国", "FOMC 政策金利発表", "5.50%", "5.50%", "5.50%")
-
-    # 3. 重要実績値の統合 (2024年5月実績)
-    if sel_year == 2024 and sel_month == 5:
-        for e in events:
-            if "雇用統計 (非農業部門)" in e['指標名']: e.update({"前回値": "31.5万人", "市場予想": "24.3万人", "結果": "17.5万人"})
-            if "雇用統計 (失業率)" in e['指標名']: e.update({"前回値": "3.8%", "市場予想": "3.8%", "結果": "3.9%"})
-            if "CPI" in e['指標名']: e.update({"前回値": "3.5%", "市場予想": "3.4%", "結果": "3.4%"})
-            if "小売売上" in e['指標名']: e.update({"前回値": "0.7%", "市場予想": "0.4%", "結果": "0.0%"})
-
-    # 4. ライブフィードによる上書き (2026年5月等の現在月対応)
-    for feed in live_feed:
-        try:
-            dt = datetime.datetime.strptime(feed['date'], '%m-%d-%Y')
-            if dt.year == sel_year and dt.month == sel_month:
-                # 名前の一部一致でマッピング
-                for e in events:
-                    if int(e['日付'].split('-')[2]) == dt.day:
-                        # 雇用統計などの主要指標をマッピング
-                        if ("Employment" in feed['title'] or "Payroll" in feed['title']) and "非農業部門" in e['指標名']:
-                            e.update({"前回値": feed['previous'], "市場予想": feed['forecast']})
-                        if "Unemployment Rate" in feed['title'] and "失業率" in e['指標名']:
-                            e.update({"前回値": feed['previous'], "市場予想": feed['forecast']})
-                        if "CPI" in feed['title'] and "CPI" in e['指標名']:
-                            e.update({"前回値": feed['previous'], "市場予想": feed['forecast']})
-        except: continue
-
-    # 結果の自動判定 (過去・未来)
-    for e in events:
-        dt = datetime.datetime.strptime(e['日付'], '%Y-%m-%d')
-        if dt > now:
-            e['結果'] = "発表待ち"
-        elif e['結果'] == "-":
-            e['結果'] = "集計中"
-
-    return pd.DataFrame(events)
-
+# --- 関数群 ---
 @st.cache_data(ttl=600)
 def get_market_data(ticker_symbol, period="5d"):
     try:
@@ -193,31 +88,29 @@ with tabs[1]:
         for n in fetch_news("米国株 FRB")[:8]:
             st.markdown(f'<a href="{n.link}" target="_blank" class="n-title">{n.title}</a><div class="n-meta">{n.published}</div>', unsafe_allow_html=True)
 
-# --- Tab 3: カレンダー ---
+# --- Tab 3: カレンダー (TradingViewウィジェット統合) ---
 with tabs[2]:
-    st.subheader("📅 経済指標カレンダー")
-    now = datetime.datetime.now()
-    y_range = list(range(2020, now.year + 2))
-    sel_y = st.selectbox("年を選択", y_range, index=y_range.index(now.year))
-    sel_m = st.selectbox("月を選択", range(1, 13), index=now.month - 1)
+    st.subheader("📅 経済指標カレンダー (リアルタイム)")
+    st.markdown("TradingViewの公式データに基づく、最新の経済カレンダーです。重要度や国別にフィルタリングが可能です。")
     
-    f_c1, f_c2 = st.columns(2)
-    show_us = f_c1.checkbox("米国経済指標", value=True)
-    show_jp = f_c2.checkbox("日本経済指標", value=True)
-    
-    with st.spinner("カレンダー情報を生成中..."):
-        df_cal = fetch_failsafe_calendar(sel_y, sel_m)
-    
-    if not df_cal.empty:
-        active_countries = []
-        if show_us: active_countries.append("🇺🇸 米国")
-        if show_jp: active_countries.append("🇯🇵 日本")
-        
-        display_cal = df_cal[df_cal['国'].isin(active_countries)].sort_values("日付")
-        if not display_cal.empty:
-            st.dataframe(display_cal, use_container_width=True, hide_index=True)
-        else: st.info("表示する指標はありません。")
-    else: st.info("予定は見つかりませんでした。")
+    # TradingView Economic Calendar Widget
+    tv_widget_html = """
+    <div class="tradingview-widget-container">
+      <div class="tradingview-widget-container__widget"></div>
+      <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-events.js" async>
+      {
+      "colorTheme": "light",
+      "isMaximized": true,
+      "width": "100%",
+      "height": "800",
+      "locale": "ja",
+      "importanceFilter": "-1,0,1",
+      "countryFilter": "jp,us,eu,gb,au,ca"
+    }
+      </script>
+    </div>
+    """
+    components.html(tv_widget_html, height=820, scrolling=True)
 
 # --- Tab 4: FIREシミュレーター ---
 with tabs[3]:

@@ -63,46 +63,58 @@ def get_relative_time(published_str):
 @st.cache_data(ttl=600)
 def fetch_latest_news(region):
     """
-    特定ソースに限定した日米ニュース取得
+    10件必達型ニュース取得
     """
     now = datetime.datetime.now(datetime.timezone.utc)
     
-    if region == "JP":
-        # 日本の主要ソース指定
-        sources = " (site:nikkei.com OR site:reuters.com OR site:bloomberg.co.jp OR site:news.yahoo.co.jp OR site:finance.yahoo.co.jp)"
-        query = sources + " 経済 産業 社会情勢 景気"
-        lang, gl = "ja", "JP"
-    else:
-        # 米国の主要ソース指定（英語ソースを含むが、JP地域設定で日本語タイトルを優先取得）
-        sources = " (site:cnbc.com OR site:bloomberg.com OR site:reuters.com OR site:wsj.com OR site:investing.com)"
-        query = sources + " economy industry social situation"
-        lang, gl = "ja", "JP" # 日本語化を期待
-    
-    encoded = urllib.parse.quote(query)
-    rss_url = f"https://news.google.com/rss/search?q={encoded}&hl={lang}&gl={gl}&ceid={gl}:{lang}"
-    
-    try:
-        feed = feedparser.parse(rss_url)
-        all_entries = feed.entries
-        
-        def filter_news(hours):
-            results = []
-            for e in all_entries:
-                try:
-                    dt = parser.parse(e.published)
-                    if (now - dt).total_seconds() < (hours * 3600):
-                        e['rel_time'] = get_relative_time(e.published)
-                        results.append(e)
-                except: continue
-            return results
+    def fetch_rss(query_str):
+        encoded = urllib.parse.quote(query_str)
+        rss_url = f"https://news.google.com/rss/search?q={encoded}&hl=ja&gl=JP&ceid=JP:ja"
+        try:
+            feed = feedparser.parse(rss_url)
+            return feed.entries
+        except: return []
 
-        # 24時間優先、足りなければ48時間
-        final_news = filter_news(24)
-        if len(final_news) < 10:
-            final_news = filter_news(48)
-            
-        return final_news[:10]
-    except: return []
+    if region == "JP":
+        # 優先ソース
+        p_sources = " (site:nikkei.com OR site:reuters.com OR site:bloomberg.co.jp OR site:news.yahoo.co.jp OR site:finance.yahoo.co.jp)"
+        p_query = p_sources + " 経済 産業 社会情勢"
+        f_query = "日本 経済 産業 社会情勢" # 補充用
+    else:
+        # 優先ソース
+        p_sources = " (site:cnbc.com OR site:bloomberg.com OR site:reuters.com OR site:wsj.com OR site:investing.com)"
+        p_query = p_sources + " economy industry social situation"
+        f_query = "USA economy industry social situation" # 補充用
+    
+    # 1. 優先ソースから取得
+    all_entries = fetch_rss(p_query)
+    
+    def filter_entries(entries, hours):
+        res = []
+        for e in entries:
+            try:
+                dt = parser.parse(e.published)
+                if (now - dt).total_seconds() < (hours * 3600):
+                    e['rel_time'] = get_relative_time(e.published)
+                    res.append(e)
+            except: continue
+        return res
+
+    # 24h -> 48h で絞り込み
+    final = filter_entries(all_entries, 24)
+    if len(final) < 10:
+        final = filter_entries(all_entries, 48)
+    
+    # 2. 10件に満たない場合は補充
+    if len(final) < 10:
+        fallback_entries = fetch_rss(f_query)
+        extra = filter_entries(fallback_entries, 48)
+        for e in extra:
+            if not any(f['link'] == e['link'] for f in final):
+                final.append(e)
+                if len(final) >= 10: break
+                
+    return final[:10]
 
 @st.cache_data(ttl=600)
 def get_market_data(ticker_symbol, period="5d"):
@@ -133,7 +145,7 @@ with tabs[0]:
                 fig.update_layout(margin=dict(l=0, r=0, t=0, b=0), xaxis_visible=False, yaxis_visible=False)
                 st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
 
-# --- Tab 2: ニュース (ソース特化・日本語化版) ---
+# --- Tab 2: ニュース (10件必達版) ---
 with tabs[1]:
     st.subheader("📰 最新経済ニュース (24時間以内に自動更新)")
     n_c1, n_c2 = st.columns(2)

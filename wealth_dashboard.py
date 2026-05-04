@@ -123,7 +123,7 @@ with tabs[2]:
     show_jp_eco = f_c3.checkbox("日本経済指標", value=True)
     show_jp_ear = f_c4.checkbox("日本株決算", value=True)
     
-    # データの生成（本来はAPI取得、ここでは指定年月のサンプルを作成）
+    # データの生成
     cal_data = [
         {"日付": f"{sel_year}-{sel_month:02d}-05", "カテゴリ": "米国経済指標", "内容": "米雇用統計"},
         {"日付": f"{sel_year}-{sel_month:02d}-12", "カテゴリ": "米国経済指標", "内容": "米CPI発表"},
@@ -154,15 +154,24 @@ with tabs[3]:
         c_reg = st.number_input("特定口座 (万円)", 0.0, 100000.0, 400.0)
         c_nisa = st.number_input("NISA口座 (万円)", 0.0, 100000.0, 100.0)
         
-        # 現在資産額合計の表示
+        # 追加項目: NISA投資枠の残り
+        nisa_rem = st.number_input("NISA投資枠の残り (万円)", 0.0, 1800.0, 1700.0)
+        
+        # 現在資産額合計
         total_curr = c_reg + c_nisa
         st.markdown(f"**現在の資産額合計: {total_curr:,.1f} 万円**")
         
         m_inv = st.number_input("毎月の積立額 (万円)", 0.0, 100.0, 10.0)
+        
+        st.markdown("**期待利回り (%)**")
         r_pre = st.number_input("積立期利回り (%)", 0.0, 20.0, 5.0)
         r_post = st.number_input("FIRE後利回り (%)", 0.0, 20.0, 3.0)
         r_bull = st.number_input("強気時上乗せ (%)", 0.0, 10.0, 2.0)
         r_bear = st.number_input("弱気時下振れ (%)", 0.0, 10.0, 2.0)
+        
+        # 追加項目: 特定口座の税率
+        tax_rate = st.number_input("特定口座の税率 (%)", 0.0, 100.0, 20.315, step=0.001)
+        
         f_age = st.number_input("FIRE年齢", 18, 100, 50)
         ret_al = st.number_input("想定退職金 (万円)", 0.0, 10000.0, 0.0)
         p_age = st.number_input("年金開始年齢", 60, 75, 65)
@@ -173,7 +182,15 @@ with tabs[3]:
 
     with f_out:
         sim = FIRESimulator()
-        all_res = sim.calculate({'currentAge': age, 'currentAssets': total_curr, 'nisaAssets': c_nisa, 'monthlyInvestment': m_inv, 'expectedReturnPre': r_pre, 'expectedReturnPost': r_post, 'expectedReturnPreBull': r_pre + r_bull, 'expectedReturnPostBull': r_post + r_bull, 'expectedReturnPreBear': max(0, r_pre - r_bear), 'expectedReturnPostBear': max(0, r_post - r_bear), 'fireAge': f_age, 'livingExpense': l_exp, 'inflationRate': inf, 'pensionAmount': p_val, 'pensionAge': p_age, 'retirementAllowance': ret_al})
+        all_res = sim.calculate({
+            'currentAge': age, 'currentAssets': total_curr, 'nisaAssets': c_nisa, 
+            'nisaLimitRemaining': nisa_rem, 'taxRate': tax_rate, # 新規パラメータ
+            'monthlyInvestment': m_inv, 'expectedReturnPre': r_pre, 'expectedReturnPost': r_post, 
+            'expectedReturnPreBull': r_pre + r_bull, 'expectedReturnPostBull': r_post + r_bull, 
+            'expectedReturnPreBear': max(0, r_pre - r_bear), 'expectedReturnPostBear': max(0, r_post - r_bear), 
+            'fireAge': f_age, 'livingExpense': l_exp, 'inflationRate': inf, 
+            'pensionAmount': p_val, 'pensionAge': p_age, 'retirementAllowance': ret_al
+        })
         
         fig = go.Figure()
         clrs = {"通常": "#58a6ff", "強気": "#28a745", "弱気": "#dc3545"}
@@ -183,13 +200,13 @@ with tabs[3]:
                 x=df_h['age'], y=df_h['totalAssets'], name=n, 
                 line=dict(color=clrs[n], width=3),
                 customdata=df_h['age'],
-                hovertemplate="%{customdata}歳<br>資産: %{y:,.0f} 万円<extra></extra>" # ホバー設定
+                hovertemplate="%{customdata}歳<br>資産: %{y:,.0f} 万円<extra></extra>"
             ))
         
         fig.update_layout(
             title="将来資産推移", xaxis_title="年齢", yaxis_title="資産額 (万円)", 
             template="plotly_white", hovermode="x unified",
-            xaxis=dict(hoverformat=".0f歳") # 軸のホバー表示も修正
+            xaxis=dict(hoverformat=".0f歳")
         )
         st.plotly_chart(fig, use_container_width=True)
         

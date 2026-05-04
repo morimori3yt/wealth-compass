@@ -63,7 +63,7 @@ def get_relative_time(published_str):
 @st.cache_data(ttl=600)
 def fetch_latest_news(region):
     """
-    10件必達型ニュース取得
+    ハイブリッド型ニュース取得 (対策A + 対策C)
     """
     now = datetime.datetime.now(datetime.timezone.utc)
     
@@ -76,15 +76,17 @@ def fetch_latest_news(region):
         except: return []
 
     if region == "JP":
-        # 優先ソース
+        # 日本の専門ソース
         p_sources = " (site:nikkei.com OR site:reuters.com OR site:bloomberg.co.jp OR site:news.yahoo.co.jp OR site:finance.yahoo.co.jp)"
         p_query = p_sources + " 経済 産業 社会情勢"
-        f_query = "日本 経済 産業 社会情勢" # 補充用
+        fallback_query = "日本 経済 産業 社会情勢"
     else:
-        # 優先ソース
-        p_sources = " (site:cnbc.com OR site:bloomberg.com OR site:reuters.com OR site:wsj.com OR site:investing.com)"
-        p_query = p_sources + " economy industry social situation"
-        f_query = "USA economy industry social situation" # 補充用
+        # 米国の専門ソース（日本語版ドメイン優先：対策A）
+        # cnbc.comは日本語版がないためそのままとしつつ、他は.jp系を指定
+        p_sources = " (site:bloomberg.co.jp OR site:jp.reuters.com OR site:jp.wsj.com OR site:jp.investing.com OR site:cnbc.com)"
+        # キーワードの最適化：対策C
+        p_query = p_sources + " 米国経済 景気 FRB 産業 社会情勢"
+        fallback_query = "米国 経済 FRB 市場 社会情勢"
     
     # 1. 優先ソースから取得
     all_entries = fetch_rss(p_query)
@@ -105,9 +107,9 @@ def fetch_latest_news(region):
     if len(final) < 10:
         final = filter_entries(all_entries, 48)
     
-    # 2. 10件に満たない場合は補充
+    # 2. 10件に満たない場合は一般ニュースから補充
     if len(final) < 10:
-        fallback_entries = fetch_rss(f_query)
+        fallback_entries = fetch_rss(fallback_query)
         extra = filter_entries(fallback_entries, 48)
         for e in extra:
             if not any(f['link'] == e['link'] for f in final):
@@ -145,7 +147,7 @@ with tabs[0]:
                 fig.update_layout(margin=dict(l=0, r=0, t=0, b=0), xaxis_visible=False, yaxis_visible=False)
                 st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
 
-# --- Tab 2: ニュース (10件必達版) ---
+# --- Tab 2: ニュース (ハイブリッド版) ---
 with tabs[1]:
     st.subheader("📰 最新経済ニュース (24時間以内に自動更新)")
     n_c1, n_c2 = st.columns(2)

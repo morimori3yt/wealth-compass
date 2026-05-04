@@ -63,7 +63,7 @@ def get_relative_time(published_str):
 @st.cache_data(ttl=600)
 def fetch_latest_news(region):
     """
-    ハイブリッド型ニュース取得 (対策A + 対策C)
+    3段階自動拡張ロジックによるニュース取得
     """
     now = datetime.datetime.now(datetime.timezone.utc)
     
@@ -75,22 +75,6 @@ def fetch_latest_news(region):
             return feed.entries
         except: return []
 
-    if region == "JP":
-        # 日本の専門ソース
-        p_sources = " (site:nikkei.com OR site:reuters.com OR site:bloomberg.co.jp OR site:news.yahoo.co.jp OR site:finance.yahoo.co.jp)"
-        p_query = p_sources + " 経済 産業 社会情勢"
-        fallback_query = "日本 経済 産業 社会情勢"
-    else:
-        # 米国の専門ソース（日本語版ドメイン優先：対策A）
-        # cnbc.comは日本語版がないためそのままとしつつ、他は.jp系を指定
-        p_sources = " (site:bloomberg.co.jp OR site:jp.reuters.com OR site:jp.wsj.com OR site:jp.investing.com OR site:cnbc.com)"
-        # キーワードの最適化：対策C
-        p_query = p_sources + " 米国経済 景気 FRB 産業 社会情勢"
-        fallback_query = "米国 経済 FRB 市場 社会情勢"
-    
-    # 1. 優先ソースから取得
-    all_entries = fetch_rss(p_query)
-    
     def filter_entries(entries, hours):
         res = []
         for e in entries:
@@ -102,15 +86,34 @@ def fetch_latest_news(region):
             except: continue
         return res
 
-    # 24h -> 48h で絞り込み
-    final = filter_entries(all_entries, 24)
-    if len(final) < 10:
-        final = filter_entries(all_entries, 48)
+    # キーワードの拡充 (戦略1)
+    jp_keywords = "日本 (経済 OR 産業 OR 社会情勢 OR 景気 OR 金融緩和 OR 日銀)"
+    us_keywords = "米国 (経済 OR 景気 OR FRB OR 産業 OR 社会情勢 OR 雇用統計 OR ナスダック OR S&P500 OR 半導体 OR インフレ OR 労働市場)"
     
-    # 2. 10件に満たない場合は一般ニュースから補充
+    # ソースの拡大 (戦略2)
+    jp_p_sources = " (site:nikkei.com OR site:reuters.com OR site:bloomberg.co.jp OR site:news.yahoo.co.jp OR site:finance.yahoo.co.jp)"
+    us_p_sources = " (site:bloomberg.co.jp OR site:jp.reuters.com OR site:jp.wsj.com OR site:jp.investing.com OR site:cnbc.com OR site:nikkei.com OR site:finance.yahoo.co.jp)"
+
+    if region == "JP":
+        p_query = jp_p_sources + " " + jp_keywords
+        f_query = jp_keywords
+    else:
+        p_query = us_p_sources + " " + us_keywords
+        f_query = us_keywords
+
+    # 3段階の取得フロー (戦略3)
+    # Step 1: 24時間以内 + 優先ソース
+    entries = fetch_rss(p_query)
+    final = filter_entries(entries, 24)
+    
+    # Step 2: 48時間以内 + 優先ソース
     if len(final) < 10:
-        fallback_entries = fetch_rss(fallback_query)
-        extra = filter_entries(fallback_entries, 48)
+        final = filter_entries(entries, 48)
+        
+    # Step 3: 72時間以内 + ソース制限解除 (補充)
+    if len(final) < 10:
+        fallback_entries = fetch_rss(f_query)
+        extra = filter_entries(fallback_entries, 72)
         for e in extra:
             if not any(f['link'] == e['link'] for f in final):
                 final.append(e)
@@ -147,9 +150,9 @@ with tabs[0]:
                 fig.update_layout(margin=dict(l=0, r=0, t=0, b=0), xaxis_visible=False, yaxis_visible=False)
                 st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
 
-# --- Tab 2: ニュース (ハイブリッド版) ---
+# --- Tab 2: ニュース (10件必達版) ---
 with tabs[1]:
-    st.subheader("📰 最新経済ニュース (24時間以内に自動更新)")
+    st.subheader("📰 最新経済ニュース (自動更新)")
     n_c1, n_c2 = st.columns(2)
     with n_c1:
         st.markdown("### 🇯🇵 日本: 経済・産業・社会情勢")

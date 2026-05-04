@@ -49,14 +49,10 @@ html, body, [class*="css"] { font-family: 'Noto Sans JP', sans-serif; }
 # --- 関数群 ---
 
 def get_relative_time(published_str):
-    """
-    「◯時間前」という形式に変換
-    """
     try:
         pub_date = parser.parse(published_str)
         now = datetime.datetime.now(datetime.timezone.utc)
         diff = now - pub_date
-        
         seconds = diff.total_seconds()
         if seconds < 60: return "たった今"
         if seconds < 3600: return f"{int(seconds // 60)}分前"
@@ -67,48 +63,45 @@ def get_relative_time(published_str):
 @st.cache_data(ttl=600)
 def fetch_latest_news(region):
     """
-    24時間優先・最大48時間のハイブリッド・ニュース取得
+    特定ソースに限定した日米ニュース取得
     """
+    now = datetime.datetime.now(datetime.timezone.utc)
+    
     if region == "JP":
-        query = "(日本 経済 OR 産業 OR 社会情勢 OR 景気)"
+        # 日本の主要ソース指定
+        sources = " (site:nikkei.com OR site:reuters.com OR site:bloomberg.co.jp OR site:news.yahoo.co.jp OR site:finance.yahoo.co.jp)"
+        query = sources + " 経済 産業 社会情勢 景気"
+        lang, gl = "ja", "JP"
     else:
-        query = "(USA Economy OR Industry OR Fed OR Social Situation)"
+        # 米国の主要ソース指定（英語ソースを含むが、JP地域設定で日本語タイトルを優先取得）
+        sources = " (site:cnbc.com OR site:bloomberg.com OR site:reuters.com OR site:wsj.com OR site:investing.com)"
+        query = sources + " economy industry social situation"
+        lang, gl = "ja", "JP" # 日本語化を期待
     
     encoded = urllib.parse.quote(query)
-    rss_url = f"https://news.google.com/rss/search?q={encoded}&hl=ja&gl=JP&ceid=JP:ja"
+    rss_url = f"https://news.google.com/rss/search?q={encoded}&hl={lang}&gl={gl}&ceid={gl}:{lang}"
     
     try:
         feed = feedparser.parse(rss_url)
         all_entries = feed.entries
         
-        now = datetime.datetime.now(datetime.timezone.utc)
-        
-        # 24時間以内の記事を抽出
-        news_24h = []
-        for e in all_entries:
-            try:
-                dt = parser.parse(e.published)
-                if (now - dt).total_seconds() < 86400:
-                    e['rel_time'] = get_relative_time(e.published)
-                    news_24h.append(e)
-            except: continue
+        def filter_news(hours):
+            results = []
+            for e in all_entries:
+                try:
+                    dt = parser.parse(e.published)
+                    if (now - dt).total_seconds() < (hours * 3600):
+                        e['rel_time'] = get_relative_time(e.published)
+                        results.append(e)
+                except: continue
+            return results
+
+        # 24時間優先、足りなければ48時間
+        final_news = filter_news(24)
+        if len(final_news) < 10:
+            final_news = filter_news(48)
             
-        if len(news_24h) >= 10:
-            return news_24h[:10]
-        
-        # 10件に満たない場合、48時間まで広げる
-        news_48h = news_24h.copy()
-        for e in all_entries:
-            if e in news_24h: continue
-            try:
-                dt = parser.parse(e.published)
-                diff_sec = (now - dt).total_seconds()
-                if 86400 <= diff_sec < 172800:
-                    e['rel_time'] = get_relative_time(e.published)
-                    news_48h.append(e)
-            except: continue
-            
-        return news_48h[:10]
+        return final_news[:10]
     except: return []
 
 @st.cache_data(ttl=600)
@@ -140,7 +133,7 @@ with tabs[0]:
                 fig.update_layout(margin=dict(l=0, r=0, t=0, b=0), xaxis_visible=False, yaxis_visible=False)
                 st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
 
-# --- Tab 2: ニュース (最新・広範囲更新版) ---
+# --- Tab 2: ニュース (ソース特化・日本語化版) ---
 with tabs[1]:
     st.subheader("📰 最新経済ニュース (24時間以内に自動更新)")
     n_c1, n_c2 = st.columns(2)
@@ -152,7 +145,7 @@ with tabs[1]:
                 st.markdown(f'<a href="{n.link}" target="_blank" class="n-title">{n.title}</a><div class="n-meta"><span class="n-time-tag">⏱ {n.rel_time}</span> | {n.source.get("title", "Google News")}</div>', unsafe_allow_html=True)
         else: st.info("現在、表示できる最新ニュースはありません。")
     with n_c2:
-        st.markdown("### 🇺🇸 米国: 経済・産業・FRB動向")
+        st.markdown("### 🇺🇸 米国: 経済・産業・社会情勢")
         us_news = fetch_latest_news("US")
         if us_news:
             for n in us_news:

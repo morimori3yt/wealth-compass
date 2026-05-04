@@ -8,6 +8,7 @@ import yfinance as yf
 from simulation_logic import FIRESimulator
 import datetime
 import calendar
+import re
 import io
 
 # --- ページ設定 ---
@@ -38,29 +39,50 @@ html, body, [class*="css"] { font-family: 'Noto Sans JP', sans-serif; }
 </style>
 """, unsafe_allow_html=True)
 
-# --- 詳細経済カレンダーエンジン ---
+# --- ニュース検索による指標結果の抽出エンジン ---
+
+@st.cache_data(ttl=1800)
+def extract_indicator_result(indicator_name):
+    """
+    ニュースの見出しから指標の数値を抽出
+    """
+    encoded = urllib.parse.quote(f"{indicator_name} 結果 発表")
+    rss_url = f"https://news.google.com/rss/search?q={encoded}&hl=ja&gl=JP&ceid=JP:ja"
+    try:
+        feed = feedparser.parse(rss_url)
+        for entry in feed.entries[:3]:
+            # %や万人などの数値を含むパターンを正規表現で探す
+            match = re.search(r"(\d+\.?\d*[%％])|(\d+\.?\d*万人)", entry.title)
+            if match:
+                return match.group(0)
+    except: pass
+    return "-"
 
 @st.cache_data(ttl=3600*24)
 def fetch_economic_calendar(sel_year, sel_month):
-    """
-    主要経済指標の詳細データ（前回・予想・結果）を生成
-    """
+    now = datetime.datetime.now()
     events = []
     
-    def add_eco(day, cat, name, prev, fore, res):
-        if 1 <= day <= 31:
-            events.append({
-                "日付": f"{sel_year}-{sel_month:02d}-{day:02d}",
-                "国": "🇺🇸 米国" if "米国" in cat else "🇯🇵 日本",
-                "指標名": name,
-                "前回値": prev,
-                "市場予想": fore,
-                "結果": res
-            })
+    def add_eco(day, cat, name, prev, fore):
+        # 発表日を過ぎている場合は結果を取得
+        result = "-"
+        target_date = datetime.datetime(sel_year, sel_month, day)
+        if target_date < now:
+            result = extract_indicator_result(name)
+        elif target_date.date() == now.date():
+            result = "本日発表"
+        else:
+            result = "発表待ち"
 
-    # 月の日数を取得
-    _, last_day = calendar.monthrange(sel_year, sel_month)
-    
+        events.append({
+            "日付": f"{sel_year}-{sel_month:02d}-{day:02d}",
+            "国": "🇺🇸 米国" if "米国" in cat else "🇯🇵 日本",
+            "指標名": name,
+            "前回値": prev,
+            "市場予想": fore,
+            "結果": result
+        })
+
     # 第1金曜日: 雇用統計
     cal_obj = calendar.Calendar(firstweekday=calendar.SUNDAY)
     month_days = cal_obj.monthdays2calendar(sel_year, sel_month)
@@ -70,22 +92,18 @@ def fetch_economic_calendar(sel_year, sel_month):
             if d != 0 and dow == calendar.FRIDAY: f_fri = d; break
         if f_fri != -1: break
     
-    # 典型的な指標スケジュールとダミー/推計値 (2024年現在の傾向)
     if f_fri != -1:
-        add_eco(f_fri, "米国経済指標", "非農業部門雇用者数", "30.3万人", "24.3万人", "-")
-        add_eco(f_fri, "米国経済指標", "失業率", "3.8%", "3.8%", "-")
+        add_eco(f_fri, "米国経済指標", "米雇用統計 (非農業部門)", "30.3万人", "24.3万人")
     
-    add_eco(12, "米国経済指標", "CPI (消費者物価指数) [前年比]", "3.5%", "3.4%", "-")
-    add_eco(12, "米国経済指標", "CPIコア指数 [前年比]", "3.8%", "3.7%", "-")
-    add_eco(15, "米国経済指標", "小売売上高 [前月比]", "0.7%", "0.4%", "-")
+    add_eco(12, "米国経済指標", "米CPI (消費者物価指数)", "3.5%", "3.4%")
+    add_eco(15, "米国経済指標", "米小売売上高", "0.7%", "0.4%")
     
     if sel_month in [1, 3, 5, 6, 7, 9, 11, 12]:
-        add_eco(20, "米国経済指標", "FOMC 政策金利発表", "5.50%", "5.50%", "-")
+        add_eco(20, "米国経済指標", "FOMC 政策金利", "5.50%", "5.50%")
 
-    add_eco(1, "日本経済指標", "日銀短観 (大企業製造業DI)", "10", "9", "-")
-    add_eco(20, "日本経済指標", "全国CPI (除生鮮食品) [前年比]", "2.6%", "2.7%", "-")
-    add_eco(25, "日本経済指標", "日銀金融政策決定会合 (政策金利)", "0.10%", "0.10%", "-")
-    add_eco(15, "日本経済指標", "実質GDP [前期比年率]", "1.2%", "1.0%", "-")
+    add_eco(1, "日本経済指標", "日銀短観", "10", "9")
+    add_eco(20, "日本経済指標", "日本CPI", "2.6%", "2.7%")
+    add_eco(25, "日本経済指標", "日銀金融政策決定会合", "0.10%", "0.10%")
             
     return pd.DataFrame(events)
 
@@ -139,7 +157,7 @@ with tabs[1]:
         for n in fetch_news("米国株 FRB")[:8]:
             st.markdown(f'<a href="{n.link}" target="_blank" class="n-title">{n.title}</a><div class="n-meta">{n.published}</div>', unsafe_allow_html=True)
 
-# --- Tab 3: カレンダー (経済指標特化) ---
+# --- Tab 3: カレンダー ---
 with tabs[2]:
     st.subheader("📅 経済指標カレンダー")
     now = datetime.datetime.now()
@@ -151,7 +169,8 @@ with tabs[2]:
     show_us = f_c1.checkbox("米国経済指標", value=True)
     show_jp = f_c2.checkbox("日本経済指標", value=True)
     
-    df_cal = fetch_economic_calendar(sel_y, sel_m)
+    with st.spinner("最新の結果を取得中..."):
+        df_cal = fetch_economic_calendar(sel_y, sel_m)
     
     if not df_cal.empty:
         active_countries = []

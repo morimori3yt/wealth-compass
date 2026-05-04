@@ -38,13 +38,13 @@ html, body, [class*="css"] { font-family: 'Noto Sans JP', sans-serif; }
 </style>
 """, unsafe_allow_html=True)
 
-# --- カレンダーデータ取得・算出エンジン (最終版) ---
+# --- カレンダーデータ取得・算出エンジン (確実性向上版) ---
 
 @st.cache_data(ttl=3600*12)
 def fetch_calendar_data(sel_year, sel_month):
     events = []
     
-    # 1. 経済指標 (高精度推計)
+    # --- 1. 経済指標 (高精度推計) ---
     def add_eco(day, cat, content):
         if 1 <= day <= 31:
             events.append({"日付": f"{sel_year}-{sel_month:02d}-{day:02d}", "カテゴリ": cat, "内容": content})
@@ -56,7 +56,8 @@ def fetch_calendar_data(sel_year, sel_month):
         for d, dow in week:
             if d != 0 and dow == calendar.FRIDAY: f_fri = d; break
         if f_fri != -1: break
-    if f_fri != -1: add_eco(f_fri, "米国経済指標", "米雇用統計")
+    
+    if f_fri != -1: add_eco(f_fri, "米国経済指標", "米雇用統計発表")
     add_eco(12, "米国経済指標", "米CPI (消費者物価指数)")
     add_eco(15, "米国経済指標", "米小売売上高")
     if sel_month in [1, 3, 5, 6, 7, 9, 11, 12]: add_eco(20, "米国経済指標", "FOMC (政策金利発表)")
@@ -64,23 +65,43 @@ def fetch_calendar_data(sel_year, sel_month):
     add_eco(20, "日本経済指標", "日本CPI (消費者物価指数)")
     add_eco(25, "日本経済指標", "日銀金融政策決定会合")
 
-    # 2. 決算スケジュール (Ticker.earnings_dates方式へ刷新)
-    # 取得効率と成功率を重視した主要銘柄リスト
-    tickers_jp = ["7203.T", "6758.T", "8306.T", "9984.T", "6861.T", "4063.T", "8035.T", "9432.T"]
-    tickers_us = ["AAPL", "MSFT", "NVDA", "AMZN", "TSLA", "META", "GOOGL", "NFLX", "AMD"]
+    # --- 2. 決算スケジュール (厳選銘柄・多重チェック) ---
+    tickers_jp = ["7203.T", "6758.T", "8306.T", "9984.T", "6861.T", "9432.T", "8035.T", "6752.T", "7267.T", "8058.T"]
+    tickers_us = ["AAPL", "MSFT", "NVDA", "AMZN", "TSLA", "META", "GOOGL", "NFLX", "AMD", "WMT"]
     
-    all_tickers = [(t, "日本株決算") for t in tickers_jp] + [(t, "米国株決算") for t in tickers_us]
+    # まとめてチェックすることで速度と成功率を向上
+    all_targets = [(tickers_jp, "日本株決算"), (tickers_us, "米国株決算")]
     
-    for symbol, cat in all_tickers:
-        try:
-            t = yf.Ticker(symbol)
-            # より populated な earnings_dates を使用
-            ed_df = t.earnings_dates
-            if ed_df is not None and not ed_df.empty:
-                for ed_idx in ed_df.index:
-                    if ed_idx.year == sel_year and ed_idx.month == sel_month:
-                        events.append({"日付": ed_idx.strftime('%Y-%m-%d'), "カテゴリ": cat, "内容": f"{symbol.replace('.T','')} 決算"})
-        except: continue
+    for tickers, cat_name in all_targets:
+        for symbol in tickers:
+            try:
+                t = yf.Ticker(symbol)
+                found_date = None
+                
+                # 方法A: calendarプロパティ
+                cal = t.calendar
+                if cal is not None and not cal.empty:
+                    found_date = cal.loc['Earnings Date'].iloc[0] if 'Earnings Date' in cal.index else cal.iloc[0, 0]
+                
+                # 方法B: earnings_dates (方法Aでダメな場合)
+                if found_date is None or not hasattr(found_date, 'year'):
+                    ed_df = t.earnings_dates
+                    if ed_df is not None and not ed_df.empty:
+                        # 直近または将来の日付を探す
+                        for ed_idx in ed_df.index:
+                            if ed_idx.year == sel_year and ed_idx.month == sel_month:
+                                found_date = ed_idx
+                                break
+                
+                # 結果の登録
+                if found_date and hasattr(found_date, 'year'):
+                    if found_date.year == sel_year and found_date.month == sel_month:
+                        events.append({
+                            "日付": found_date.strftime('%Y-%m-%d'), 
+                            "カテゴリ": cat_name, 
+                            "内容": f"{symbol.replace('.T','')} 決算発表"
+                        })
+            except: continue
             
     return pd.DataFrame(events)
 
@@ -101,7 +122,7 @@ def fetch_news(keyword):
         return feed.entries
     except: return []
 
-# --- コンテンツ構成 ---
+# --- アプリメイン ---
 st.title("🧭 資産形成の羅針盤")
 st.markdown("""<div style="text-align:center; margin:10px 0;"><a href="https://rpx.a8.net/svt/ejp?a8mat=4B3GYD+C0U5KI+2HOM+69P01&rakuten=y&a8ejpredirect=http%3A%2F%2Fhb.afl.rakuten.co.jp%2Fhgc%2F0ea62065.34400275.0ea62066.204f04c0%2Fa26050208529_4B3GYD_C0U5KI_2HOM_69P01%3Fpc%3Dhttp%253A%252F%252Fwww.rakuten.co.jp%252F%26m%3Dhttp%253A%252F%252Fm.rakuten.co.jp%252F" rel="nofollow"><img src="https://hbb.afl.rakuten.co.jp/hsb/0eb4bbc7.e9e6f789.0eb4bbaa.95151395/" border="0"></a></div>""", unsafe_allow_html=True)
 
@@ -159,7 +180,6 @@ with tabs[2]:
         if show_jp_ear: active_cats.append("日本株決算")
         display_cal = df_cal[df_cal['カテゴリ'].isin(active_cats)].sort_values("日付")
         if not display_cal.empty:
-            # 謎の数字（インデックス）を非表示にして表示
             st.dataframe(display_cal, use_container_width=True, hide_index=True)
         else: st.info("表示する予定はありません。")
     else: st.info("予定は見つかりませんでした。")

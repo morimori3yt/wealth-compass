@@ -34,6 +34,11 @@ html, body, [class*="css"] { font-family: 'Noto Sans JP', sans-serif; }
 .m-up { color: #28a745; }
 .m-down { color: #dc3545; }
 .rev-panel { background: #eef2f7; padding: 15px; border-radius: 8px; border: 1px solid #d1d9e6; margin-top: 10px; }
+.guide-box { background: #ffffff; border: 1px solid #e0e0e0; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-size: 0.85rem; }
+.guide-title { font-weight: 700; color: #333; margin-bottom: 8px; border-bottom: 1px solid #eee; padding-bottom: 5px; display: flex; align-items: center; }
+.guide-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+.guide-item { color: #555; }
+.guide-item b { color: #007bff; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -88,10 +93,32 @@ with tabs[1]:
         for n in fetch_news("米国株 FRB")[:8]:
             st.markdown(f'<a href="{n.link}" target="_blank" class="n-title">{n.title}</a><div class="n-meta">{n.published}</div>', unsafe_allow_html=True)
 
-# --- Tab 3: カレンダー (TradingViewウィジェット統合) ---
+# --- Tab 3: カレンダー (解説ガイド付き) ---
 with tabs[2]:
-    st.subheader("📅 経済指標カレンダー (リアルタイム)")
-    st.markdown("TradingViewの公式データに基づく、最新の経済カレンダーです。重要度や国別にフィルタリングが可能です。")
+    st.subheader("📅 経済指標カレンダー")
+    
+    # 凡例と翻訳ガイド
+    st.markdown("""
+    <div class="guide-box">
+        <div class="guide-title">📊 凡例 (数値の見方)</div>
+        <div style="display: flex; gap: 20px; margin-bottom: 15px;">
+            <span><b>Actual (結果):</b> 今回発表された確定値</span>
+            <span><b>Forecast (予想):</b> 市場関係者の事前予測</span>
+            <span><b>Previous (前回):</b> 前回の発表数値</span>
+        </div>
+        <div class="guide-title">🔤 主要指標の日本語訳ガイド</div>
+        <div class="guide-grid">
+            <div class="guide-item"><b>Non-Farm Payrolls:</b> 非農業部門雇用者数</div>
+            <div class="guide-item"><b>Unemployment Rate:</b> 失業率</div>
+            <div class="guide-item"><b>CPI (y/y):</b> 消費者物価指数 (前年比)</div>
+            <div class="guide-item"><b>Retail Sales:</b> 小売売上高</div>
+            <div class="guide-item"><b>GDP:</b> 国内総生産</div>
+            <div class="guide-item"><b>Interest Rate:</b> 政策金利 (FOMC等)</div>
+            <div class="guide-item"><b>Core CPI:</b> コア物価指数 (変動激しい食品除外)</div>
+            <div class="guide-item"><b>Initial Jobless Claims:</b> 新規失業保険申請件数</div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
     
     # TradingView Economic Calendar Widget
     tv_widget_html = """

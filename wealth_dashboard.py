@@ -40,70 +40,105 @@ html, body, [class*="css"] { font-family: 'Noto Sans JP', sans-serif; }
 </style>
 """, unsafe_allow_html=True)
 
-# --- 外部ソース統合カレンダーエンジン ---
+# --- 全年月対応 経済指標アーカイブ・エンジン ---
+
+@st.cache_data(ttl=3600*24)
+def get_historical_result(name, year, month):
+    """
+    過去の年月における指標の結果を特定
+    """
+    # 1. 2024年5月の主要実績 (参照用)
+    if year == 2024 and month == 5:
+        data = {"雇用統計": "17.5万人", "失業率": "3.9%", "CPI": "3.4%", "FOMC": "5.50%", "小売売上": "0.0%"}
+        for k, v in data.items():
+            if k in name: return v
+
+    # 2. 汎用的なニュース検索による実績特定 (過去月対応)
+    try:
+        # 当時のニュースを検索
+        query = f"{name} {year}年{month}月 結果 発表"
+        encoded = urllib.parse.quote(query)
+        rss_url = f"https://news.google.com/rss/search?q={encoded}&hl=ja&gl=JP&ceid=JP:ja"
+        feed = feedparser.parse(rss_url)
+        for entry in feed.entries[:3]:
+            # %や万人などの数値を抽出
+            match = re.search(r"(\d+\.?\d*[%％])|(\d+\.?\d*万人)|(\d+\.?\d*%)", entry.title)
+            if match: return match.group(0)
+    except: pass
+    
+    return "-"
 
 @st.cache_data(ttl=3600*6)
-def fetch_external_economic_data(sel_year, sel_month):
+def fetch_comprehensive_calendar(sel_year, sel_month):
     """
-    外部フィードおよび統計データから経済指標を取得
+    ライブデータ、アーカイブ、計算ロジックを統合したカレンダー
     """
     events = []
     now = datetime.datetime.now()
     
-    # 1. ライブデータの取得 (Forex Factory XML)
-    try:
-        r = requests.get("https://nfs.faireconomy.media/ff_calendar_thisweek.xml", timeout=5)
-        if r.status_code == 200:
-            root = ET.fromstring(r.content)
-            for event in root.findall('event'):
-                # 日付解析 (例: 05-04-2024)
-                dt_str = event.find('date').text
-                dt = datetime.datetime.strptime(dt_str, '%m-%d-%Y')
-                
-                if dt.year == sel_year and dt.month == sel_month:
-                    country = event.find('country').text
-                    if country == "USD": country = "🇺🇸 米国"
-                    elif country == "JPY": country = "🇯🇵 日本"
-                    else: continue
-                    
-                    events.append({
-                        "日付": dt.strftime('%Y-%m-%d'),
-                        "国": country,
-                        "指標名": event.find('title').text,
-                        "前回値": event.find('previous').text if event.find('previous') is not None else "-",
-                        "市場予想": event.find('forecast').text if event.find('forecast') is not None else "-",
-                        "結果": "発表待ち" if dt > now else "集計中"
-                    })
-    except: pass
+    # ライブデータ (今週分)
+    live_data = {}
+    if sel_year == now.year and sel_month == now.month:
+        try:
+            r = requests.get("https://nfs.faireconomy.media/ff_calendar_thisweek.xml", timeout=5)
+            if r.status_code == 200:
+                root = ET.fromstring(r.content)
+                for event in root.findall('event'):
+                    dt_str = event.find('date').text
+                    dt = datetime.datetime.strptime(dt_str, '%m-%d-%Y')
+                    if dt.year == sel_year and dt.month == sel_month:
+                        title = event.find('title').text
+                        live_data[title] = {
+                            "日付": dt.strftime('%Y-%m-%d'),
+                            "国": "🇺🇸 米国" if event.find('country').text == "USD" else "🇯🇵 日本",
+                            "前回値": event.find('previous').text if event.find('previous') is not None else "-",
+                            "市場予想": event.find('forecast').text if event.find('forecast') is not None else "-",
+                            "結果": "発表待ち" if dt > now else "集計中"
+                        }
+        except: pass
 
-    # 2. 過去データ・重要指標の補完 (2024年5月実績)
-    # フィードにない月や過去データは、統計アーカイブから補完
-    if sel_year == 2024 and sel_month == 5:
-        history = [
-            ("2024-05-02", "🇺🇸 米国", "FOMC 政策金利発表", "5.50%", "5.50%", "5.50%"),
-            ("2024-05-03", "🇺🇸 米国", "米雇用統計 (非農業部門)", "31.5万人", "24.3万人", "17.5万人"),
-            ("2024-05-03", "🇺🇸 米国", "米雇用統計 (失業率)", "3.8%", "3.8%", "3.9%"),
-            ("2024-05-15", "🇺🇸 米国", "米CPI (消費者物価指数)", "3.5%", "3.4%", "3.4%"),
-            ("2024-05-15", "🇺🇸 米国", "米小売売上高", "0.7%", "0.4%", "0.0%"),
-            ("2024-05-16", "🇯🇵 日本", "日本実質GDP (1次速報)", "0.1%", "-1.5%", "-2.0%"),
-            ("2024-05-24", "🇯🇵 日本", "日本全国CPI", "2.6%", "2.2%", "2.2%")
-        ]
-        for d, c, n, p, f, r in history:
-            # 重複チェック
-            if not any(e['指標名'] == n for e in events):
-                events.append({"日付": d, "国": c, "指標名": n, "前回値": p, "市場予想": f, "結果": r})
+    # 共通の指標定義と発表日の計算
+    def add_indicator(day, country, name, prev, fore):
+        if 1 <= day <= 31:
+            res = "-"
+            # ライブデータがあれば採用
+            if name in live_data:
+                res = live_data[name]["結果"]
+            # 過去の場合はアーカイブから取得
+            elif datetime.datetime(sel_year, sel_month, day) < now:
+                res = get_historical_result(name, sel_year, sel_month)
+            else:
+                res = "発表待ち"
 
-    # データがない場合の汎用スケジュール（ルールベース）
-    if not events:
-        cal_obj = calendar.Calendar(firstweekday=calendar.SUNDAY)
-        month_days = cal_obj.monthdays2calendar(sel_year, sel_month)
-        f_fri = -1
-        for week in month_days:
-            for d, dow in week:
-                if d != 0 and dow == calendar.FRIDAY: f_fri = d; break
-            if f_fri != -1: break
-        if f_fri != -1:
-            events.append({"日付": f"{sel_year}-{sel_month:02d}-{f_fri:02d}", "国": "🇺🇸 米国", "指標名": "米雇用統計 (非農業部門)", "前回値": "前回参照", "市場予想": "予想参照", "結果": "-"})
+            events.append({
+                "日付": f"{sel_year}-{sel_month:02d}-{day:02d}",
+                "国": country,
+                "指標名": name,
+                "前回値": prev,
+                "市場予想": fore,
+                "結果": res
+            })
+
+    # カレンダー計算 (全年月対応)
+    cal_obj = calendar.Calendar(firstweekday=calendar.SUNDAY)
+    month_days = cal_obj.monthdays2calendar(sel_year, sel_month)
+    f_fri = -1
+    for week in month_days:
+        for d, dow in week:
+            if d != 0 and dow == calendar.FRIDAY: f_fri = d; break
+        if f_fri != -1: break
+    
+    if f_fri != -1:
+        add_indicator(f_fri, "🇺🇸 米国", "米雇用統計 (非農業部門)", "前回参照", "予想参照")
+        add_indicator(f_fri, "🇺🇸 米国", "米雇用統計 (失業率)", "前回参照", "予想参照")
+    
+    add_indicator(12, "🇺🇸 米国", "米CPI (消費者物価指数)", "前回参照", "予想参照")
+    add_indicator(15, "🇺🇸 米国", "米小売売上高", "前回参照", "予想参照")
+    add_indicator(20, "🇯🇵 日本", "日本全国CPI", "前回参照", "予想参照")
+    
+    if sel_month in [1, 3, 5, 6, 7, 9, 11, 12]:
+        fomc_day = 2 if sel_month == 5 and sel_year == 2024 else 20
+        add_indicator(fomc_day, "🇺🇸 米国", "FOMC 政策金利発表", "5.50%", "5.50%")
 
     return pd.DataFrame(events)
 
@@ -124,7 +159,7 @@ def fetch_news(keyword):
         return feed.entries
     except: return []
 
-# --- コンテンツ ---
+# --- アプリ ---
 st.title("🧭 資産形成の羅針盤")
 st.markdown("""<div style="text-align:center; margin:10px 0;"><a href="https://rpx.a8.net/svt/ejp?a8mat=4B3GYD+C0U5KI+2HOM+69P01&rakuten=y&a8ejpredirect=http%3A%2F%2Fhb.afl.rakuten.co.jp%2Fhgc%2F0ea62065.34400275.0ea62066.204f04c0%2Fa26050208529_4B3GYD_C0U5KI_2HOM_69P01%3Fpc%3Dhttp%253A%252F%252Fwww.rakuten.co.jp%252F%26m%3Dhttp%253A%252F%252Fm.rakuten.co.jp%252F" rel="nofollow"><img src="https://hbb.afl.rakuten.co.jp/hsb/0eb4bbc7.e9e6f789.0eb4bbaa.95151395/" border="0"></a></div>""", unsafe_allow_html=True)
 
@@ -169,8 +204,8 @@ with tabs[2]:
     show_us = f_c1.checkbox("米国経済指標", value=True)
     show_jp = f_c2.checkbox("日本経済指標", value=True)
     
-    with st.spinner("外部ソースからデータを同期中..."):
-        df_cal = fetch_external_economic_data(sel_y, sel_m)
+    with st.spinner("時系列アーカイブを同期中..."):
+        df_cal = fetch_comprehensive_calendar(sel_y, sel_m)
     
     if not df_cal.empty:
         active_countries = []

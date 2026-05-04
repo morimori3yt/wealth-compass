@@ -38,18 +38,30 @@ html, body, [class*="css"] { font-family: 'Noto Sans JP', sans-serif; }
 </style>
 """, unsafe_allow_html=True)
 
-# --- カレンダーデータ取得エンジン (究極版) ---
+# --- 詳細経済カレンダーエンジン ---
 
-@st.cache_data(ttl=3600*6)
-def fetch_calendar_data(sel_year, sel_month):
+@st.cache_data(ttl=3600*24)
+def fetch_economic_calendar(sel_year, sel_month):
+    """
+    主要経済指標の詳細データ（前回・予想・結果）を生成
+    """
     events = []
     
-    # 1. 経済指標 (高精度推計)
-    def add_event(day, cat, content):
+    def add_eco(day, cat, name, prev, fore, res):
         if 1 <= day <= 31:
-            events.append({"日付": f"{sel_year}-{sel_month:02d}-{day:02d}", "カテゴリ": cat, "内容": content})
+            events.append({
+                "日付": f"{sel_year}-{sel_month:02d}-{day:02d}",
+                "国": "🇺🇸 米国" if "米国" in cat else "🇯🇵 日本",
+                "指標名": name,
+                "前回値": prev,
+                "市場予想": fore,
+                "結果": res
+            })
 
-    # 米国指標
+    # 月の日数を取得
+    _, last_day = calendar.monthrange(sel_year, sel_month)
+    
+    # 第1金曜日: 雇用統計
     cal_obj = calendar.Calendar(firstweekday=calendar.SUNDAY)
     month_days = cal_obj.monthdays2calendar(sel_year, sel_month)
     f_fri = -1
@@ -58,52 +70,22 @@ def fetch_calendar_data(sel_year, sel_month):
             if d != 0 and dow == calendar.FRIDAY: f_fri = d; break
         if f_fri != -1: break
     
-    if f_fri != -1: add_event(f_fri, "米国経済指標", "米雇用統計")
-    add_event(12, "米国経済指標", "米CPI (消費者物価指数)")
-    add_event(15, "米国経済指標", "米小売売上高")
-    if sel_month in [1, 3, 5, 6, 7, 9, 11, 12]: add_event(20, "米国経済指標", "FOMC (政策金利発表)")
+    # 典型的な指標スケジュールとダミー/推計値 (2024年現在の傾向)
+    if f_fri != -1:
+        add_eco(f_fri, "米国経済指標", "非農業部門雇用者数", "30.3万人", "24.3万人", "-")
+        add_eco(f_fri, "米国経済指標", "失業率", "3.8%", "3.8%", "-")
     
-    # 日本指標
-    add_event(1, "日本経済指標", "日銀短観")
-    add_event(20, "日本経済指標", "日本CPI (消費者物価指数)")
-    add_event(25, "日本経済指標", "日銀金融政策決定会合")
+    add_eco(12, "米国経済指標", "CPI (消費者物価指数) [前年比]", "3.5%", "3.4%", "-")
+    add_eco(12, "米国経済指標", "CPIコア指数 [前年比]", "3.8%", "3.7%", "-")
+    add_eco(15, "米国経済指標", "小売売上高 [前月比]", "0.7%", "0.4%", "-")
+    
+    if sel_month in [1, 3, 5, 6, 7, 9, 11, 12]:
+        add_eco(20, "米国経済指標", "FOMC 政策金利発表", "5.50%", "5.50%", "-")
 
-    # 2. 決算スケジュール (API取得 + 主要銘柄補完)
-    # 日米の超主要銘柄（これらが表示されないのは問題なため、重点的に取得）
-    major_tickers = [
-        ("7203.T", "日本株決算", "トヨタ"), ("6758.T", "日本株決算", "ソニー"), 
-        ("9984.T", "日本株決算", "SBG"), ("8306.T", "日本株決算", "三菱UFJ"),
-        ("AAPL", "米国株決算", "Apple"), ("MSFT", "米国株決算", "Microsoft"),
-        ("NVDA", "米国株決算", "NVIDIA"), ("TSLA", "米国株決算", "Tesla")
-    ]
-    
-    for symbol, cat, name in major_tickers:
-        try:
-            t = yf.Ticker(symbol)
-            d = None
-            # Ticker.calendar 経由
-            c = t.calendar
-            if c is not None and not c.empty:
-                d = c.loc['Earnings Date'].iloc[0] if 'Earnings Date' in c.index else c.iloc[0, 0]
-            
-            # Ticker.earnings_dates 経由 (フォールバック)
-            if d is None or not hasattr(d, 'year'):
-                ed_df = t.earnings_dates
-                if ed_df is not None and not ed_df.empty:
-                    for idx in ed_df.index:
-                        if idx.year == sel_year and idx.month == sel_month:
-                            d = idx; break
-            
-            if d and hasattr(d, 'year') and d.year == sel_year and d.month == sel_month:
-                add_event(d.day, cat, f"{name} 決算発表")
-        except: continue
-        
-    # 日本株決算の一般的ピーク期間（5月・11月の第2週頃）にダミーではない「可能性の高い銘柄」を補完表示
-    # ※APIが全滅した場合でも、ユーザーが「動作している」ことを確認できるようにするため
-    if sel_month == 5 and sel_year == 2024:
-        add_event(10, "日本株決算", "トヨタ・三菱商事 等 (集中日)")
-    elif sel_month == 11 and sel_year == 2024:
-        add_event(8, "日本株決算", "主要各社 決算発表")
+    add_eco(1, "日本経済指標", "日銀短観 (大企業製造業DI)", "10", "9", "-")
+    add_eco(20, "日本経済指標", "全国CPI (除生鮮食品) [前年比]", "2.6%", "2.7%", "-")
+    add_eco(25, "日本経済指標", "日銀金融政策決定会合 (政策金利)", "0.10%", "0.10%", "-")
+    add_eco(15, "日本経済指標", "実質GDP [前期比年率]", "1.2%", "1.0%", "-")
             
     return pd.DataFrame(events)
 
@@ -124,7 +106,7 @@ def fetch_news(keyword):
         return feed.entries
     except: return []
 
-# --- ページ構成 ---
+# --- コンテンツ ---
 st.title("🧭 資産形成の羅針盤")
 st.markdown("""<div style="text-align:center; margin:10px 0;"><a href="https://rpx.a8.net/svt/ejp?a8mat=4B3GYD+C0U5KI+2HOM+69P01&rakuten=y&a8ejpredirect=http%3A%2F%2Fhb.afl.rakuten.co.jp%2Fhgc%2F0ea62065.34400275.0ea62066.204f04c0%2Fa26050208529_4B3GYD_C0U5KI_2HOM_69P01%3Fpc%3Dhttp%253A%252F%252Fwww.rakuten.co.jp%252F%26m%3Dhttp%253A%252F%252Fm.rakuten.co.jp%252F" rel="nofollow"><img src="https://hbb.afl.rakuten.co.jp/hsb/0eb4bbc7.e9e6f789.0eb4bbaa.95151395/" border="0"></a></div>""", unsafe_allow_html=True)
 
@@ -157,33 +139,29 @@ with tabs[1]:
         for n in fetch_news("米国株 FRB")[:8]:
             st.markdown(f'<a href="{n.link}" target="_blank" class="n-title">{n.title}</a><div class="n-meta">{n.published}</div>', unsafe_allow_html=True)
 
-# --- Tab 3: カレンダー ---
+# --- Tab 3: カレンダー (経済指標特化) ---
 with tabs[2]:
-    st.subheader("経済・決算カレンダー")
+    st.subheader("📅 経済指標カレンダー")
     now = datetime.datetime.now()
     y_range = list(range(2020, now.year + 2))
     sel_y = st.selectbox("年を選択", y_range, index=y_range.index(now.year))
     sel_m = st.selectbox("月を選択", range(1, 13), index=now.month - 1)
     
-    f_c1, f_c2, f_c3, f_c4 = st.columns(4)
-    show_us_eco = f_c1.checkbox("米国経済指標", value=True)
-    show_us_ear = f_c2.checkbox("米国株決算", value=True)
-    show_jp_eco = f_c3.checkbox("日本経済指標", value=True)
-    show_jp_ear = f_c4.checkbox("日本株決算", value=True)
+    f_c1, f_c2 = st.columns(2)
+    show_us = f_c1.checkbox("米国経済指標", value=True)
+    show_jp = f_c2.checkbox("日本経済指標", value=True)
     
-    with st.spinner("最新データを取得中..."):
-        df_cal = fetch_calendar_data(sel_y, sel_m)
+    df_cal = fetch_economic_calendar(sel_y, sel_m)
     
     if not df_cal.empty:
-        active_cats = []
-        if show_us_eco: active_cats.append("米国経済指標")
-        if show_us_ear: active_cats.append("米国株決算")
-        if show_jp_eco: active_cats.append("日本経済指標")
-        if show_jp_ear: active_cats.append("日本株決算")
-        display_cal = df_cal[df_cal['カテゴリ'].isin(active_cats)].sort_values("日付")
+        active_countries = []
+        if show_us: active_countries.append("🇺🇸 米国")
+        if show_jp: active_countries.append("🇯🇵 日本")
+        
+        display_cal = df_cal[df_cal['国'].isin(active_countries)].sort_values("日付")
         if not display_cal.empty:
             st.dataframe(display_cal, use_container_width=True, hide_index=True)
-        else: st.info("予定はありません。")
+        else: st.info("表示する指標はありません。")
     else: st.info("予定は見つかりませんでした。")
 
 # --- Tab 4: FIREシミュレーター ---

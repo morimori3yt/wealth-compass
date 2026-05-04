@@ -8,6 +8,8 @@ import plotly.graph_objects as go
 import yfinance as yf
 from simulation_logic import FIRESimulator
 import datetime
+from dateutil import parser
+import time
 
 # --- ページ設定 ---
 st.set_page_config(
@@ -26,8 +28,10 @@ st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap');
 html, body, [class*="css"] { font-family: 'Noto Sans JP', sans-serif; }
-.n-title { font-size: 1.05rem; font-weight: 700; color: #000000 !important; line-height: 1.4; text-decoration: none; display: block; margin-bottom: 4px; }
-.n-meta { font-size: 0.75rem; color: #666666; margin-bottom: 12px; border-bottom: 1px solid #eeeeee; padding-bottom: 8px; }
+.n-title { font-size: 1.0rem; font-weight: 700; color: #000000 !important; line-height: 1.4; text-decoration: none; display: block; margin-bottom: 2px; }
+.n-title:hover { color: #007bff !important; }
+.n-meta { font-size: 0.75rem; color: #d9534f; font-weight: 700; margin-bottom: 10px; border-bottom: 1px solid #eeeeee; padding-bottom: 6px; display: flex; align-items: center; gap: 5px; }
+.n-time-tag { background: #fff1f0; color: #cf1322; padding: 1px 6px; border-radius: 4px; border: 1px solid #ffa39e; }
 .m-card { background: #f8f9fa; border: 1px solid #e9ecef; padding: 10px; border-radius: 6px; text-align: center; margin-bottom: 10px; }
 .m-label { font-size: 0.8rem; color: #6c757d; }
 .m-price { font-size: 1.2rem; font-weight: 700; color: #212529; }
@@ -43,6 +47,70 @@ html, body, [class*="css"] { font-family: 'Noto Sans JP', sans-serif; }
 """, unsafe_allow_html=True)
 
 # --- 関数群 ---
+
+def get_relative_time(published_str):
+    """
+    「◯時間前」という形式に変換
+    """
+    try:
+        pub_date = parser.parse(published_str)
+        now = datetime.datetime.now(datetime.timezone.utc)
+        diff = now - pub_date
+        
+        seconds = diff.total_seconds()
+        if seconds < 60: return "たった今"
+        if seconds < 3600: return f"{int(seconds // 60)}分前"
+        if seconds < 86400: return f"{int(seconds // 3600)}時間前"
+        return f"{int(seconds // 86400)}日前"
+    except: return "不明"
+
+@st.cache_data(ttl=600)
+def fetch_latest_news(region):
+    """
+    24時間優先・最大48時間のハイブリッド・ニュース取得
+    """
+    if region == "JP":
+        query = "(日本 経済 OR 産業 OR 社会情勢 OR 景気)"
+    else:
+        query = "(USA Economy OR Industry OR Fed OR Social Situation)"
+    
+    encoded = urllib.parse.quote(query)
+    rss_url = f"https://news.google.com/rss/search?q={encoded}&hl=ja&gl=JP&ceid=JP:ja"
+    
+    try:
+        feed = feedparser.parse(rss_url)
+        all_entries = feed.entries
+        
+        now = datetime.datetime.now(datetime.timezone.utc)
+        
+        # 24時間以内の記事を抽出
+        news_24h = []
+        for e in all_entries:
+            try:
+                dt = parser.parse(e.published)
+                if (now - dt).total_seconds() < 86400:
+                    e['rel_time'] = get_relative_time(e.published)
+                    news_24h.append(e)
+            except: continue
+            
+        if len(news_24h) >= 10:
+            return news_24h[:10]
+        
+        # 10件に満たない場合、48時間まで広げる
+        news_48h = news_24h.copy()
+        for e in all_entries:
+            if e in news_24h: continue
+            try:
+                dt = parser.parse(e.published)
+                diff_sec = (now - dt).total_seconds()
+                if 86400 <= diff_sec < 172800:
+                    e['rel_time'] = get_relative_time(e.published)
+                    news_48h.append(e)
+            except: continue
+            
+        return news_48h[:10]
+    except: return []
+
 @st.cache_data(ttl=600)
 def get_market_data(ticker_symbol, period="5d"):
     try:
@@ -50,15 +118,6 @@ def get_market_data(ticker_symbol, period="5d"):
         df = ticker.history(period=period)
         return df
     except: return pd.DataFrame()
-
-@st.cache_data(ttl=1800)
-def fetch_news(keyword):
-    encoded = urllib.parse.quote(keyword)
-    rss_url = f"https://news.google.com/rss/search?q={encoded}&hl=ja&gl=JP&ceid=JP:ja"
-    try:
-        feed = feedparser.parse(rss_url)
-        return feed.entries
-    except: return []
 
 # --- アプリメイン ---
 st.title("🧭 資産形成の羅針盤")
@@ -81,23 +140,28 @@ with tabs[0]:
                 fig.update_layout(margin=dict(l=0, r=0, t=0, b=0), xaxis_visible=False, yaxis_visible=False)
                 st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
 
-# --- Tab 2: ニュース ---
+# --- Tab 2: ニュース (最新・広範囲更新版) ---
 with tabs[1]:
+    st.subheader("📰 最新経済ニュース (24時間以内に自動更新)")
     n_c1, n_c2 = st.columns(2)
     with n_c1:
-        st.subheader("🇯🇵 日本経済")
-        for n in fetch_news("日本株 経済")[:8]:
-            st.markdown(f'<a href="{n.link}" target="_blank" class="n-title">{n.title}</a><div class="n-meta">{n.published}</div>', unsafe_allow_html=True)
+        st.markdown("### 🇯🇵 日本: 経済・産業・社会情勢")
+        jp_news = fetch_latest_news("JP")
+        if jp_news:
+            for n in jp_news:
+                st.markdown(f'<a href="{n.link}" target="_blank" class="n-title">{n.title}</a><div class="n-meta"><span class="n-time-tag">⏱ {n.rel_time}</span> | {n.source.get("title", "Google News")}</div>', unsafe_allow_html=True)
+        else: st.info("現在、表示できる最新ニュースはありません。")
     with n_c2:
-        st.subheader("🇺🇸 米国経済")
-        for n in fetch_news("米国株 FRB")[:8]:
-            st.markdown(f'<a href="{n.link}" target="_blank" class="n-title">{n.title}</a><div class="n-meta">{n.published}</div>', unsafe_allow_html=True)
+        st.markdown("### 🇺🇸 米国: 経済・産業・FRB動向")
+        us_news = fetch_latest_news("US")
+        if us_news:
+            for n in us_news:
+                st.markdown(f'<a href="{n.link}" target="_blank" class="n-title">{n.title}</a><div class="n-meta"><span class="n-time-tag">⏱ {n.rel_time}</span> | {n.source.get("title", "Google News")}</div>', unsafe_allow_html=True)
+        else: st.info("現在、表示できる最新ニュースはありません。")
 
-# --- Tab 3: カレンダー (解説ガイド付き) ---
+# --- Tab 3: カレンダー ---
 with tabs[2]:
     st.subheader("📅 経済指標カレンダー")
-    
-    # 凡例と翻訳ガイド
     st.markdown("""
     <div class="guide-box">
         <div class="guide-title">📊 凡例 (数値の見方)</div>
@@ -119,21 +183,11 @@ with tabs[2]:
         </div>
     </div>
     """, unsafe_allow_html=True)
-    
-    # TradingView Economic Calendar Widget
     tv_widget_html = """
     <div class="tradingview-widget-container">
       <div class="tradingview-widget-container__widget"></div>
       <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-events.js" async>
-      {
-      "colorTheme": "light",
-      "isMaximized": true,
-      "width": "100%",
-      "height": "800",
-      "locale": "ja",
-      "importanceFilter": "-1,0,1",
-      "countryFilter": "jp,us,eu,gb,au,ca"
-    }
+      { "colorTheme": "light", "isMaximized": true, "width": "100%", "height": "800", "locale": "ja", "importanceFilter": "-1,0,1", "countryFilter": "jp,us,eu,gb,au,ca" }
       </script>
     </div>
     """

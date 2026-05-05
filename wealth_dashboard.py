@@ -108,13 +108,16 @@ def render_market_tile(name, symbol):
     display_color = UP_COLOR if is_up else DOWN_COLOR
     sign = "+" if is_up else ""
     
+    # 表示桁数の判定 (為替や金利は3桁、それ以外は2桁)
+    fmt = ",.3f" if ("JPY" in symbol or "^TNX" in symbol) else ",.2f"
+    
     with st.container():
         st.markdown(f"""
         <div class="m-tile">
             <div class="m-tile-name">{name}</div>
-            <div class="m-tile-price">{curr:,.2f if "JPY" not in symbol and "^TNX" not in symbol else curr:,.3f}</div>
+            <div class="m-tile-price">{curr:{fmt}}</div>
             <div class="m-tile-diff" style="color: {display_color};">
-                {sign}{diff:,.2f} ({sign}{pct:.2f}%)
+                {sign}{diff:{fmt}} ({sign}{pct:.2f}%)
             </div>
         </div>
         """, unsafe_allow_html=True)

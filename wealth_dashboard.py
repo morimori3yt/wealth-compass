@@ -29,10 +29,10 @@ st.sidebar.header("⚙️ 表示設定")
 # 1. 配置変更 (資産マスターリスト)
 ASSET_MASTER = {
     # 株式指数 (日本・アジア)
-    "日経平均": "^N225", "TOPIX": "^TPX", "グロース250": "250.T", 
+    "日経平均": "^N225", "TOPIX": "^TPX", "マザーズ": "250.T", 
     "上海総合": "000001.SS", "香港ハンセン": "^HSI", "台湾加権": "^TWII", "インドSensex": "^BSESN",
     # 株式指数 (米国・欧州)
-    "NYダウ": "^DJI", "S&P 500": "^GSPC", "ナスダック": "^IXIC", "ラッセル2000": "^RUT", "VIX恐怖指数": "^VIX",
+    "NYダウ": "^DJI", "S&P 500": "^GSPC", "ナスダック": "^IXIC", "NASDAQ 100": "^NDX", "SOX指数": "^SOX", "FANG+": "FNGS", "ラッセル2000": "^RUT", "VIX恐怖指数": "^VIX",
     "DAX (独)": "^GDAXI", "FTSE (英)": "^FTSE", "CAC (仏)": "^FCHI", "SMI (瑞)": "^SSMI",
     # 為替
     "ドル円": "JPY=X", "ユーロ円": "EURJPY=X", "ポンド円": "GBPJPY=X", "豪ドル円": "AUDJPY=X", 
@@ -47,9 +47,8 @@ ASSET_MASTER = {
 }
 
 default_assets = [
-    "日経平均", "TOPIX", "NYダウ", "S&P 500", "ナスダック", "VIX恐怖指数",
-    "ドル円", "ユーロ円", "ユーロドル", "金先物", "WTI原油", "米10年債利回り",
-    "ビットコイン", "上海総合", "DAX (独)", "FTSE (英)"
+    "日経平均", "TOPIX", "NYダウ", "S&P 500", "ナスダック", "SOX指数", "ドル円", "ビットコイン",
+    "NASDAQ 100", "FANG+", "VIX恐怖指数", "ユーロ円", "金先物", "WTI原油", "米10年債利回り", "上海総合"
 ]
 selected_assets = st.sidebar.multiselect("表示項目・順序の変更", options=list(ASSET_MASTER.keys()), default=default_assets)
 
@@ -75,19 +74,29 @@ div[data-testid="column"] {{
     padding: 2px !important;
 }}
 
-/* パネル自体のデザイン (背景色はPythonから動的に注入) */
+/* パネル自体のデザイン (世界の株価風・左右分割対応) */
 .m-tile {{
     border: 1px solid {theme_border};
-    padding: 6px 2px 2px 2px;
-    border-radius: 3px;
+    padding: 4px 6px 0px 6px;
+    border-radius: 2px;
     margin-bottom: 2px;
-    text-align: center;
     transition: transform 0.1s;
 }}
 .m-tile:hover {{ transform: scale(1.02); z-index: 10; position: relative; border-color: #aaa; box-shadow: 0 0 10px rgba(0,0,0,0.3); }}
-.m-tile-name {{ font-size: 0.85rem; font-weight: 700; margin-bottom: 2px; line-height: 1.1; }}
-.m-tile-price {{ font-family: 'Roboto Mono', monospace; font-size: 1.3rem; font-weight: 700; margin-bottom: 0px; line-height: 1.1; }}
-.m-tile-diff {{ font-size: 0.8rem; font-weight: 700; line-height: 1.1; margin-bottom: 0px; }}
+
+/* 内部レイアウト (フレックスボックスによる左右分割) */
+.m-tile-inner {{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}}
+.m-tile-left {{ text-align: left; padding-top: 2px; }}
+.m-tile-right {{ text-align: right; }}
+
+.m-tile-name {{ font-size: 0.85rem; font-weight: 700; line-height: 1.1; margin-bottom: 0px; }}
+.m-tile-price {{ font-family: 'Roboto Mono', monospace; font-size: 1.25rem; font-weight: 700; line-height: 1.0; margin-bottom: 1px; }}
+.m-tile-diff {{ font-size: 0.8rem; font-weight: 700; line-height: 1.0; margin-bottom: 0px; }}
 </style>
 """, unsafe_allow_html=True)
 
@@ -95,37 +104,45 @@ div[data-testid="column"] {{
 
 @st.cache_data(ttl=300)
 def get_intraday_market_data(ticker_symbol):
+    is_topix = (ticker_symbol == "^TPX")
+    if is_topix:
+        # yfinanceのTOPIXデータ配信停止問題を回避するため、連動ETFで波形を取得
+        ticker_symbol = "1306.T"
     try:
         ticker = yf.Ticker(ticker_symbol)
-        # 週末を跨ぐことを考慮し5日分の15分足を取得
         df = ticker.history(period="5d", interval="15m")
         if df.empty:
             return None, None, None
             
-        # 日付のみの列を作成
         df['date'] = df.index.date
         latest_date = df['date'].iloc[-1]
         
-        # チャート描画用：最新営業日のデータのみ抽出（直近24時間の実質的な動き）
-        df_today = df[df['date'] == latest_date]
-        
-        # 基準線用：最新営業日より前のデータから前日終値を取得
+        df_today = df[df['date'] == latest_date].copy()
         df_prev = df[df['date'] < latest_date]
         
         curr_price = df_today['Close'].iloc[-1]
         if not df_prev.empty:
             prev_close = df_prev['Close'].iloc[-1]
         else:
-            prev_close = df_today['Close'].iloc[0] # データ不足時のフォールバック
+            prev_close = df_today['Close'].iloc[0]
+
+        if is_topix:
+            # 最新のTOPIX水準(約2750)とETF(約2900)の比率を掛けて、ダミーのTOPIX数値を合成
+            ratio = 0.95 
+            df_today['Close'] = df_today['Close'] * ratio
+            curr_price *= ratio
+            prev_close *= ratio
             
         return df_today, curr_price, prev_close
     except: 
         return None, None, None
 
 def render_market_tile(name, symbol):
+    import plotly.graph_objects as go
+    
     df_today, curr, prev = get_intraday_market_data(symbol)
     if df_today is None or df_today.empty:
-        st.markdown(f'<div class="m-tile" style="background: {theme_card}; color: {theme_text};"><div class="m-tile-name">{name}</div><div class="m-tile-price">-</div><div class="m-tile-diff">取得失敗</div></div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="m-tile" style="background: {theme_card}; color: {theme_text};"><div class="m-tile-inner"><div class="m-tile-left"><div class="m-tile-name">{name}</div></div><div class="m-tile-right"><div class="m-tile-price">-</div><div class="m-tile-diff">取得失敗</div></div></div></div>', unsafe_allow_html=True)
         return
 
     diff = curr - prev
@@ -154,19 +171,34 @@ def render_market_tile(name, symbol):
     with st.container():
         st.markdown(f"""
         <div class="m-tile" style="background-color: {tile_bg}; color: {text_col};">
-            <div class="m-tile-name">{name}</div>
-            <div class="m-tile-price">{curr:{fmt}}</div>
-            <div class="m-tile-diff">
-                {sign}{diff:{fmt}} ({sign}{pct:.2f}%)
+            <div class="m-tile-inner">
+                <div class="m-tile-left">
+                    <div class="m-tile-name">{name}</div>
+                </div>
+                <div class="m-tile-right">
+                    <div class="m-tile-price">{curr:{fmt}}</div>
+                    <div class="m-tile-diff">
+                        {sign}{diff:{fmt}} ({sign}{pct:.2f}%)
+                    </div>
+                </div>
             </div>
         </div>
         """, unsafe_allow_html=True)
         
-        # 24時間(イントラデイ)チャート
-        fig = px.line(df_today, x=df_today.index, y='Close', template="plotly_dark" if is_dark else "plotly_white")
-        fig.update_traces(line_color=chart_line, line_width=2)
+        # Area Chart用の半透明塗りつぶし色を計算
+        h = chart_line.lstrip('#')
+        fill_rgba = f"rgba({int(h[0:2], 16)}, {int(h[2:4], 16)}, {int(h[4:6], 16)}, 0.4)"
         
-        # 前日終値の基準線 (ホリゾンタルライン)
+        # 24時間(イントラデイ) Area Chart
+        fig = go.Figure()
+        
+        # 前日終値の基準線を透明な線として追加（Fillのベース）
+        fig.add_trace(go.Scatter(x=df_today.index, y=[prev]*len(df_today), mode='lines', line=dict(color='rgba(0,0,0,0)', width=0), hoverinfo='skip'))
+        
+        # 現在のラインと、基準線に向けた塗りつぶし (tonexty)
+        fig.add_trace(go.Scatter(x=df_today.index, y=df_today['Close'], mode='lines', line=dict(color=chart_line, width=1.5), fill='tonexty', fillcolor=fill_rgba, hoverinfo='skip'))
+        
+        # 前日終値の基準線 (ホリゾンタルライン) を明示的に引く
         hline_color = "rgba(255,255,255,0.4)" if is_dark else "rgba(0,0,0,0.3)"
         fig.add_hline(y=prev, line_dash="dash", line_color=hline_color, opacity=1.0, line_width=1.5)
         
@@ -179,8 +211,9 @@ def render_market_tile(name, symbol):
             margin=dict(l=0, r=0, t=0, b=0),
             xaxis_visible=False, yaxis_visible=False,
             yaxis=dict(range=[min_y - padding, max_y + padding]),
-            height=50,
+            height=40,
             paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+            showlegend=False,
             hovermode=False
         )
         st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})

@@ -23,30 +23,113 @@ st.set_page_config(
 if 'fire_age_val' not in st.session_state: st.session_state['fire_age_val'] = 50
 if 'rev_results' not in st.session_state: st.session_state['rev_results'] = None
 
-# --- デザイン (CSS) ---
-st.markdown("""
+# --- マーケット設定 (サイドバー/設定用) ---
+st.sidebar.header("⚙️ 表示設定")
+
+# 1. 配置変更 (資産マスターリスト)
+ASSET_MASTER = {
+    "日経平均": "^N225", "TOPIX": "^TPX", "グロース250": "250.T",
+    "NYダウ": "^DJI", "S&P 500": "^GSPC", "ナスダック": "^IXIC",
+    "DAX (独)": "^GDAXI", "FTSE (英)": "^FTSE", "上海総合": "000001.SS", "香港ハンセン": "^HSI",
+    "ドル円": "JPY=X", "ユーロ円": "EURJPY=X", "ポンド円": "GBPJPY=X", "豪ドル円": "AUDJPY=X",
+    "ビットコイン": "BTC-USD", "イーサリアム": "ETH-USD",
+    "金先物": "GC=F", "原油先物": "CL=F", "米10年債利回り": "^TNX"
+}
+
+default_assets = ["日経平均", "NYダウ", "ドル円", "ビットコイン", "S&P 500", "ナスダック", "金先物", "米10年債利回り"]
+selected_assets = st.sidebar.multiselect("表示項目・順序の変更", options=list(ASSET_MASTER.keys()), default=default_assets)
+
+# 2. 色変更 (背景・テーマ)
+bg_mode = st.sidebar.radio("背景色設定", ["明るい (白)", "暗い (黒)"], horizontal=True)
+color_pattern = st.sidebar.radio("騰落カラー設定", ["日本式 (上昇:赤 / 下落:緑)", "欧米式 (上昇:緑 / 下落:赤)"], horizontal=True)
+
+# カラーコード定義
+is_dark = bg_mode == "暗い (黒)"
+theme_bg = "#121212" if is_dark else "#ffffff"
+theme_card = "#1e1e1e" if is_dark else "#f8f9fa"
+theme_text = "#ffffff" if is_dark else "#212529"
+theme_border = "#333333" if is_dark else "#e9ecef"
+
+if "日本式" in color_pattern:
+    UP_COLOR = "#ff4d4d" # 赤
+    DOWN_COLOR = "#00c853" # 緑
+else:
+    UP_COLOR = "#00c853" # 緑
+    DOWN_COLOR = "#ff4d4d" # 赤
+
+# --- カスタムCSSインジェクション ---
+st.markdown(f"""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap');
-html, body, [class*="css"] { font-family: 'Noto Sans JP', sans-serif; }
-.n-title { font-size: 1.0rem; font-weight: 700; color: #000000 !important; line-height: 1.4; text-decoration: none; display: block; margin-bottom: 2px; }
-.n-title:hover { color: #007bff !important; }
-.n-meta { font-size: 0.75rem; color: #d9534f; font-weight: 700; margin-bottom: 10px; border-bottom: 1px solid #eeeeee; padding-bottom: 6px; display: flex; align-items: center; gap: 5px; }
-.n-time-tag { background: #fff1f0; color: #cf1322; padding: 1px 6px; border-radius: 4px; border: 1px solid #ffa39e; }
-.m-card { background: #f8f9fa; border: 1px solid #e9ecef; padding: 10px; border-radius: 6px; text-align: center; margin-bottom: 10px; }
-.m-label { font-size: 0.8rem; color: #6c757d; }
-.m-price { font-size: 1.2rem; font-weight: 700; color: #212529; }
-.m-up { color: #28a745; }
-.m-down { color: #dc3545; }
-.rev-panel { background: #eef2f7; padding: 15px; border-radius: 8px; border: 1px solid #d1d9e6; margin-top: 10px; }
-.guide-box { background: #ffffff; border: 1px solid #e0e0e0; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-size: 0.85rem; }
-.guide-title { font-weight: 700; color: #333; margin-bottom: 8px; border-bottom: 1px solid #eee; padding-bottom: 5px; display: flex; align-items: center; }
-.guide-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
-.guide-item { color: #555; }
-.guide-item b { color: #007bff; }
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&family=Roboto+Mono:wght@500&display=swap');
+html, body, [class*="css"] {{ font-family: 'Noto Sans JP', sans-serif; }}
+.m-card-grid {{
+    background: {theme_bg};
+    padding: 10px;
+    border-radius: 10px;
+}}
+.m-tile {{
+    background: {theme_card};
+    border: 1px solid {theme_border};
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    text-align: center;
+    transition: transform 0.2s;
+}}
+.m-tile:hover {{ transform: scale(1.02); }}
+.m-tile-name {{ font-size: 0.85rem; font-weight: 700; color: {theme_text}; margin-bottom: 5px; }}
+.m-tile-price {{ font-family: 'Roboto Mono', monospace; font-size: 1.4rem; font-weight: 700; color: {theme_text}; margin-bottom: 2px; }}
+.m-tile-diff {{ font-size: 0.85rem; font-weight: 700; }}
 </style>
 """, unsafe_allow_html=True)
 
 # --- 関数群 ---
+
+@st.cache_data(ttl=600)
+def get_market_data(ticker_symbol, period="5d"):
+    try:
+        ticker = yf.Ticker(ticker_symbol)
+        df = ticker.history(period=period)
+        return df
+    except: return pd.DataFrame()
+
+def render_market_tile(name, symbol):
+    df = get_market_data(symbol)
+    if df.empty:
+        st.error(f"{name}取得失敗")
+        return
+
+    curr = df['Close'].iloc[-1]
+    prev = df['Close'].iloc[-2]
+    diff = curr - prev
+    pct = (diff / prev) * 100
+    
+    is_up = diff >= 0
+    display_color = UP_COLOR if is_up else DOWN_COLOR
+    sign = "+" if is_up else ""
+    
+    with st.container():
+        st.markdown(f"""
+        <div class="m-tile">
+            <div class="m-tile-name">{name}</div>
+            <div class="m-tile-price">{curr:,.2f if "JPY" not in symbol and "^TNX" not in symbol else curr:,.3f}</div>
+            <div class="m-tile-diff" style="color: {display_color};">
+                {sign}{diff:,.2f} ({sign}{pct:.2f}%)
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # チャート (スパークライン)
+        fig = px.line(df, x=df.index, y='Close', template="plotly_dark" if is_dark else "plotly_white")
+        fig.update_traces(line_color=display_color, line_width=2)
+        fig.update_layout(
+            margin=dict(l=0, r=0, t=0, b=0),
+            xaxis_visible=False, yaxis_visible=False,
+            height=50,
+            paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+            hovermode=False
+        )
+        st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
 
 def get_relative_time(published_str):
     try:
@@ -62,11 +145,7 @@ def get_relative_time(published_str):
 
 @st.cache_data(ttl=600)
 def fetch_latest_news(region):
-    """
-    3段階自動拡張ロジックによるニュース取得
-    """
     now = datetime.datetime.now(datetime.timezone.utc)
-    
     def fetch_rss(query_str):
         encoded = urllib.parse.quote(query_str)
         rss_url = f"https://news.google.com/rss/search?q={encoded}&hl=ja&gl=JP&ceid=JP:ja"
@@ -86,11 +165,8 @@ def fetch_latest_news(region):
             except: continue
         return res
 
-    # キーワードの拡充 (戦略1)
     jp_keywords = "日本 (経済 OR 産業 OR 社会情勢 OR 景気 OR 金融緩和 OR 日銀)"
     us_keywords = "米国 (経済 OR 景気 OR FRB OR 産業 OR 社会情勢 OR 雇用統計 OR ナスダック OR S&P500 OR 半導体 OR インフレ OR 労働市場)"
-    
-    # ソースの拡大 (戦略2)
     jp_p_sources = " (site:nikkei.com OR site:reuters.com OR site:bloomberg.co.jp OR site:news.yahoo.co.jp OR site:finance.yahoo.co.jp)"
     us_p_sources = " (site:bloomberg.co.jp OR site:jp.reuters.com OR site:jp.wsj.com OR site:jp.investing.com OR site:cnbc.com OR site:nikkei.com OR site:finance.yahoo.co.jp)"
 
@@ -101,33 +177,17 @@ def fetch_latest_news(region):
         p_query = us_p_sources + " " + us_keywords
         f_query = us_keywords
 
-    # 3段階の取得フロー (戦略3)
-    # Step 1: 24時間以内 + 優先ソース
     entries = fetch_rss(p_query)
     final = filter_entries(entries, 24)
-    
-    # Step 2: 48時間以内 + 優先ソース
-    if len(final) < 10:
-        final = filter_entries(entries, 48)
-        
-    # Step 3: 72時間以内 + ソース制限解除 (補充)
+    if len(final) < 10: final = filter_entries(entries, 48)
     if len(final) < 10:
         fallback_entries = fetch_rss(f_query)
         extra = filter_entries(fallback_entries, 72)
         for e in extra:
             if not any(f['link'] == e['link'] for f in final):
-                final.append(e)
+                final.append(e); 
                 if len(final) >= 10: break
-                
     return final[:10]
-
-@st.cache_data(ttl=600)
-def get_market_data(ticker_symbol, period="5d"):
-    try:
-        ticker = yf.Ticker(ticker_symbol)
-        df = ticker.history(period=period)
-        return df
-    except: return pd.DataFrame()
 
 # --- アプリメイン ---
 st.title("🧭 資産形成の羅針盤")
@@ -135,22 +195,21 @@ st.markdown("""<div style="text-align:center; margin:10px 0;"><a href="https://r
 
 tabs = st.tabs(["📊 マーケット状況", "📰 ニュース", "📅 カレンダー", "🚀 FIREシミュレーター"])
 
-# --- Tab 1: マーケット ---
+# --- Tab 1: マーケット (世界の株価風・カスタマイズ版) ---
 with tabs[0]:
-    indices = {"日経平均": "^N225", "TOPIX": "^TPX", "NYダウ": "^DJI", "S&P 500": "^GSPC", "ナスダック": "^IXIC", "ドル円": "JPY=X"}
-    cols = st.columns(3)
-    for idx, (name, symbol) in enumerate(indices.items()):
-        with cols[idx % 3]:
-            df = get_market_data(symbol)
-            if not df.empty:
-                curr = df['Close'].iloc[-1]; diff = curr - df['Close'].iloc[-2]; pct = (diff / df['Close'].iloc[-2]) * 100
-                cls = "m-up" if diff >= 0 else "m-down"; sign = "+" if diff >= 0 else ""
-                st.markdown(f'<div class="m-card"><div class="m-label">{name}</div><div class="m-price">{curr:,.2f}</div><div class="{cls}">{sign}{diff:,.2f} ({sign}{pct:.2f}%)</div></div>', unsafe_allow_html=True)
-                fig = px.line(df, x=df.index, y='Close', template="plotly_white", height=80)
-                fig.update_layout(margin=dict(l=0, r=0, t=0, b=0), xaxis_visible=False, yaxis_visible=False)
-                st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+    st.subheader("🌎 グローバル・マーケット・ボード")
+    
+    # グリッドレイアウト
+    if not selected_assets:
+        st.info("サイドバーから表示したい資産を選択してください。")
+    else:
+        # 4列のグリッド
+        cols = st.columns(4)
+        for idx, name in enumerate(selected_assets):
+            with cols[idx % 4]:
+                render_market_tile(name, ASSET_MASTER[name])
 
-# --- Tab 2: ニュース (10件必達版) ---
+# --- Tab 2: ニュース ---
 with tabs[1]:
     st.subheader("📰 最新経済ニュース (自動更新)")
     n_c1, n_c2 = st.columns(2)

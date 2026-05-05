@@ -64,36 +64,30 @@ theme_card = "#1e1e1e" if is_dark else "#f8f9fa"
 theme_text = "#ffffff" if is_dark else "#212529"
 theme_border = "#333333" if is_dark else "#e9ecef"
 
-if "日本式" in color_pattern:
-    UP_COLOR = "#ff4d4d" # 赤
-    DOWN_COLOR = "#00c853" # 緑
-else:
-    UP_COLOR = "#00c853" # 緑
-    DOWN_COLOR = "#ff4d4d" # 赤
-
-# --- カスタムCSSインジェクション ---
+# --- カスタムCSSインジェクション (世界の株価パクリ仕様: 余白ゼロ・高密度) ---
 st.markdown(f"""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&family=Roboto+Mono:wght@500&display=swap');
 html, body, [class*="css"] {{ font-family: 'Noto Sans JP', sans-serif; }}
-.m-card-grid {{
-    background: {theme_bg};
-    padding: 10px;
-    border-radius: 10px;
+
+/* Streamlitカラムの余白を極限まで削る */
+div[data-testid="column"] {{
+    padding: 2px !important;
 }}
+
+/* パネル自体のデザイン (背景色はPythonから動的に注入) */
 .m-tile {{
-    background: {theme_card};
     border: 1px solid {theme_border};
-    padding: 12px;
-    border-radius: 8px;
-    margin-bottom: 15px;
+    padding: 6px 2px 2px 2px;
+    border-radius: 3px;
+    margin-bottom: 2px;
     text-align: center;
-    transition: transform 0.2s;
+    transition: transform 0.1s;
 }}
-.m-tile:hover {{ transform: scale(1.02); }}
-.m-tile-name {{ font-size: 0.85rem; font-weight: 700; color: {theme_text}; margin-bottom: 5px; }}
-.m-tile-price {{ font-family: 'Roboto Mono', monospace; font-size: 1.4rem; font-weight: 700; color: {theme_text}; margin-bottom: 2px; }}
-.m-tile-diff {{ font-size: 0.85rem; font-weight: 700; }}
+.m-tile:hover {{ transform: scale(1.02); z-index: 10; position: relative; border-color: #aaa; box-shadow: 0 0 10px rgba(0,0,0,0.3); }}
+.m-tile-name {{ font-size: 0.85rem; font-weight: 700; margin-bottom: 2px; line-height: 1.1; }}
+.m-tile-price {{ font-family: 'Roboto Mono', monospace; font-size: 1.3rem; font-weight: 700; margin-bottom: 0px; line-height: 1.1; }}
+.m-tile-diff {{ font-size: 0.8rem; font-weight: 700; line-height: 1.1; margin-bottom: 0px; }}
 </style>
 """, unsafe_allow_html=True)
 
@@ -131,25 +125,38 @@ def get_intraday_market_data(ticker_symbol):
 def render_market_tile(name, symbol):
     df_today, curr, prev = get_intraday_market_data(symbol)
     if df_today is None or df_today.empty:
-        st.error(f"{name}取得失敗")
+        st.markdown(f'<div class="m-tile" style="background: {theme_card}; color: {theme_text};"><div class="m-tile-name">{name}</div><div class="m-tile-price">-</div><div class="m-tile-diff">取得失敗</div></div>', unsafe_allow_html=True)
         return
 
     diff = curr - prev
     pct = (diff / prev) * 100 if prev != 0 else 0
-    
     is_up = diff >= 0
-    display_color = UP_COLOR if is_up else DOWN_COLOR
-    sign = "+" if is_up else ""
     
-    # 表示桁数の判定 (為替や金利は3桁、それ以外は2桁)
+    # 世界の株価風：背景色ヒートマップロジック
+    if "日本式" in color_pattern:
+        bg_up = "#4d0000" if is_dark else "#ffcccc"
+        bg_down = "#004d00" if is_dark else "#ccffcc"
+        line_up = "#ff6666" if is_dark else "#ff0000"
+        line_down = "#66ff66" if is_dark else "#008000"
+    else:
+        bg_up = "#004d00" if is_dark else "#ccffcc"
+        bg_down = "#4d0000" if is_dark else "#ffcccc"
+        line_up = "#66ff66" if is_dark else "#008000"
+        line_down = "#ff6666" if is_dark else "#ff0000"
+
+    tile_bg = bg_up if is_up else bg_down
+    chart_line = line_up if is_up else line_down
+    text_col = "#ffffff" if is_dark else "#000000"
+    
+    sign = "+" if is_up else ""
     fmt = ",.3f" if ("JPY" in symbol or "^TNX" in symbol or "^TYX" in symbol) else ",.2f"
     
     with st.container():
         st.markdown(f"""
-        <div class="m-tile">
+        <div class="m-tile" style="background-color: {tile_bg}; color: {text_col};">
             <div class="m-tile-name">{name}</div>
             <div class="m-tile-price">{curr:{fmt}}</div>
-            <div class="m-tile-diff" style="color: {display_color};">
+            <div class="m-tile-diff">
                 {sign}{diff:{fmt}} ({sign}{pct:.2f}%)
             </div>
         </div>
@@ -157,12 +164,12 @@ def render_market_tile(name, symbol):
         
         # 24時間(イントラデイ)チャート
         fig = px.line(df_today, x=df_today.index, y='Close', template="plotly_dark" if is_dark else "plotly_white")
-        fig.update_traces(line_color=display_color, line_width=2)
+        fig.update_traces(line_color=chart_line, line_width=2)
         
         # 前日終値の基準線 (ホリゾンタルライン)
-        fig.add_hline(y=prev, line_dash="dash", line_color="#888888", opacity=0.7, line_width=1)
+        hline_color = "rgba(255,255,255,0.4)" if is_dark else "rgba(0,0,0,0.3)"
+        fig.add_hline(y=prev, line_dash="dash", line_color=hline_color, opacity=1.0, line_width=1.5)
         
-        # Y軸を前日終値を中心に最適化してヒートマップ感（値動きの強調）を出す
         min_y = min(df_today['Close'].min(), prev)
         max_y = max(df_today['Close'].max(), prev)
         padding = (max_y - min_y) * 0.1
@@ -172,7 +179,7 @@ def render_market_tile(name, symbol):
             margin=dict(l=0, r=0, t=0, b=0),
             xaxis_visible=False, yaxis_visible=False,
             yaxis=dict(range=[min_y - padding, max_y + padding]),
-            height=60,
+            height=50,
             paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
             hovermode=False
         )

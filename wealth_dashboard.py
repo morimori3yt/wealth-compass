@@ -28,15 +28,29 @@ st.sidebar.header("⚙️ 表示設定")
 
 # 1. 配置変更 (資産マスターリスト)
 ASSET_MASTER = {
-    "日経平均": "^N225", "TOPIX": "^TPX", "グロース250": "250.T",
-    "NYダウ": "^DJI", "S&P 500": "^GSPC", "ナスダック": "^IXIC",
-    "DAX (独)": "^GDAXI", "FTSE (英)": "^FTSE", "上海総合": "000001.SS", "香港ハンセン": "^HSI",
-    "ドル円": "JPY=X", "ユーロ円": "EURJPY=X", "ポンド円": "GBPJPY=X", "豪ドル円": "AUDJPY=X",
-    "ビットコイン": "BTC-USD", "イーサリアム": "ETH-USD",
-    "金先物": "GC=F", "原油先物": "CL=F", "米10年債利回り": "^TNX"
+    # 株式指数 (日本・アジア)
+    "日経平均": "^N225", "TOPIX": "^TPX", "グロース250": "250.T", 
+    "上海総合": "000001.SS", "香港ハンセン": "^HSI", "台湾加権": "^TWII", "インドSensex": "^BSESN",
+    # 株式指数 (米国・欧州)
+    "NYダウ": "^DJI", "S&P 500": "^GSPC", "ナスダック": "^IXIC", "ラッセル2000": "^RUT", "VIX恐怖指数": "^VIX",
+    "DAX (独)": "^GDAXI", "FTSE (英)": "^FTSE", "CAC (仏)": "^FCHI", "SMI (瑞)": "^SSMI",
+    # 為替
+    "ドル円": "JPY=X", "ユーロ円": "EURJPY=X", "ポンド円": "GBPJPY=X", "豪ドル円": "AUDJPY=X", 
+    "ユーロドル": "EURUSD=X", "ポンドドル": "GBPUSD=X",
+    # 商品 (コモディティ)
+    "金先物": "GC=F", "銀先物": "SI=F", "銅先物": "HG=F", "プラチナ": "PL=F", 
+    "WTI原油": "CL=F", "天然ガス": "NG=F",
+    # 仮想通貨
+    "ビットコイン": "BTC-USD", "イーサリアム": "ETH-USD", "XRP (リップル)": "XRP-USD",
+    # 金利
+    "米10年債利回り": "^TNX", "米30年債利回り": "^TYX"
 }
 
-default_assets = ["日経平均", "NYダウ", "ドル円", "ビットコイン", "S&P 500", "ナスダック", "金先物", "米10年債利回り"]
+default_assets = [
+    "日経平均", "TOPIX", "NYダウ", "S&P 500", "ナスダック", "VIX恐怖指数",
+    "ドル円", "ユーロ円", "ユーロドル", "金先物", "WTI原油", "米10年債利回り",
+    "ビットコイン", "上海総合", "DAX (独)", "FTSE (英)"
+]
 selected_assets = st.sidebar.multiselect("表示項目・順序の変更", options=list(ASSET_MASTER.keys()), default=default_assets)
 
 # 2. 色変更 (背景・テーマ)
@@ -85,31 +99,50 @@ html, body, [class*="css"] {{ font-family: 'Noto Sans JP', sans-serif; }}
 
 # --- 関数群 ---
 
-@st.cache_data(ttl=600)
-def get_market_data(ticker_symbol, period="5d"):
+@st.cache_data(ttl=300)
+def get_intraday_market_data(ticker_symbol):
     try:
         ticker = yf.Ticker(ticker_symbol)
-        df = ticker.history(period=period)
-        return df
-    except: return pd.DataFrame()
+        # 週末を跨ぐことを考慮し5日分の15分足を取得
+        df = ticker.history(period="5d", interval="15m")
+        if df.empty:
+            return None, None, None
+            
+        # 日付のみの列を作成
+        df['date'] = df.index.date
+        latest_date = df['date'].iloc[-1]
+        
+        # チャート描画用：最新営業日のデータのみ抽出（直近24時間の実質的な動き）
+        df_today = df[df['date'] == latest_date]
+        
+        # 基準線用：最新営業日より前のデータから前日終値を取得
+        df_prev = df[df['date'] < latest_date]
+        
+        curr_price = df_today['Close'].iloc[-1]
+        if not df_prev.empty:
+            prev_close = df_prev['Close'].iloc[-1]
+        else:
+            prev_close = df_today['Close'].iloc[0] # データ不足時のフォールバック
+            
+        return df_today, curr_price, prev_close
+    except: 
+        return None, None, None
 
 def render_market_tile(name, symbol):
-    df = get_market_data(symbol)
-    if df.empty:
+    df_today, curr, prev = get_intraday_market_data(symbol)
+    if df_today is None or df_today.empty:
         st.error(f"{name}取得失敗")
         return
 
-    curr = df['Close'].iloc[-1]
-    prev = df['Close'].iloc[-2]
     diff = curr - prev
-    pct = (diff / prev) * 100
+    pct = (diff / prev) * 100 if prev != 0 else 0
     
     is_up = diff >= 0
     display_color = UP_COLOR if is_up else DOWN_COLOR
     sign = "+" if is_up else ""
     
     # 表示桁数の判定 (為替や金利は3桁、それ以外は2桁)
-    fmt = ",.3f" if ("JPY" in symbol or "^TNX" in symbol) else ",.2f"
+    fmt = ",.3f" if ("JPY" in symbol or "^TNX" in symbol or "^TYX" in symbol) else ",.2f"
     
     with st.container():
         st.markdown(f"""
@@ -122,13 +155,24 @@ def render_market_tile(name, symbol):
         </div>
         """, unsafe_allow_html=True)
         
-        # チャート (スパークライン)
-        fig = px.line(df, x=df.index, y='Close', template="plotly_dark" if is_dark else "plotly_white")
+        # 24時間(イントラデイ)チャート
+        fig = px.line(df_today, x=df_today.index, y='Close', template="plotly_dark" if is_dark else "plotly_white")
         fig.update_traces(line_color=display_color, line_width=2)
+        
+        # 前日終値の基準線 (ホリゾンタルライン)
+        fig.add_hline(y=prev, line_dash="dash", line_color="#888888", opacity=0.7, line_width=1)
+        
+        # Y軸を前日終値を中心に最適化してヒートマップ感（値動きの強調）を出す
+        min_y = min(df_today['Close'].min(), prev)
+        max_y = max(df_today['Close'].max(), prev)
+        padding = (max_y - min_y) * 0.1
+        if padding == 0: padding = curr * 0.001
+        
         fig.update_layout(
             margin=dict(l=0, r=0, t=0, b=0),
             xaxis_visible=False, yaxis_visible=False,
-            height=50,
+            yaxis=dict(range=[min_y - padding, max_y + padding]),
+            height=60,
             paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
             hovermode=False
         )

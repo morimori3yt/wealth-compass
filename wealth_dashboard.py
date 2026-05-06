@@ -230,7 +230,7 @@ def fetch_latest_news(region):
 st.title("🧭 資産形成の羅針盤")
 st.markdown("""<div style="text-align:center; margin:10px 0;"><a href="https://rpx.a8.net/svt/ejp?a8mat=4B3GYD+C0U5KI+2HOM+69P01&rakuten=y&a8ejpredirect=http%3A%2F%2Fhb.afl.rakuten.co.jp%2Fhgc%2F0ea62065.34400275.0ea62066.204f04c0%2Fa26050208529_4B3GYD_C0U5KI_2HOM_69P01%3Fpc%3Dhttp%253A%252F%252Fwww.rakuten.co.jp%252F%26m%3Dhttp%253A%252F%252Fm.rakuten.co.jp%252F" rel="nofollow"><img src="https://hbb.afl.rakuten.co.jp/hsb/0eb4bbc7.e9e6f789.0eb4bbaa.95151395/" border="0"></a></div>""", unsafe_allow_html=True)
 
-tabs = st.tabs(["📊 マーケット状況", "📰 ニュース", "📅 カレンダー", "🚀 FIREシミュレーター"])
+tabs = st.tabs(["📊 マーケット状況", "📰 ニュース", "📅 カレンダー", "🚀 FIREシミュレーター", "⏱️ 不労所得", "🎰 センチメント", "🌊 暴落テスト"])
 
 # --- Tab 1: マーケット (世界の株価風・カスタマイズ版) ---
 with tabs[0]:
@@ -638,3 +638,313 @@ with tabs[3]:
             status_text = "✅ 100歳まで安泰" if not r['exhaustionAge'] else f"⚠️ {r['exhaustionAge']}歳で枯渇"
             with rep_cols[idx]:
                 st.markdown(f'<div class="fire-report-card {css_class}"><div class="fire-report-title" style="color:{clrs[n]};">{n}シナリオ</div><div class="fire-report-status">{status_text}</div><div class="fire-report-amount">100歳時: {r["finalAssets"]:,.0f}万円</div></div>', unsafe_allow_html=True)
+
+# --- Tab 5: 不労所得リアルタイムメーター ---
+with tabs[4]:
+    st.subheader("⏱️ 不労所得リアルタイムメーター")
+    st.caption("あなたの資産が「今この瞬間も」いくら稼いでいるかをリアルタイムで可視化します。")
+    
+    pm_c1, pm_c2 = st.columns(2)
+    with pm_c1:
+        pm_assets = st.number_input("保有資産額 (万円)", 0.0, 1000000.0, 1000.0, step=100.0, key="pm_assets")
+    with pm_c2:
+        pm_rate = st.number_input("想定年利回り (%)", 0.0, 30.0, 5.0, step=0.5, key="pm_rate")
+    
+    # 計算
+    annual_income = pm_assets * pm_rate / 100  # 万円/年
+    daily_income = annual_income / 365
+    hourly_income = daily_income / 24
+    per_minute = hourly_income / 60
+    per_second = per_minute / 60
+    per_second_yen = per_second * 10000  # 円換算
+    daily_income_yen = daily_income * 10000
+    
+    # JavaScriptリアルタイムカウンター
+    counter_html = f"""
+    <div style="background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%); border-radius: 16px; padding: 30px; text-align: center; margin: 16px 0; box-shadow: 0 8px 24px rgba(0,0,0,0.2); border: 1px solid #334155;">
+        <div style="color: #94A3B8; font-size: 0.95rem; font-weight: 600; margin-bottom: 8px; letter-spacing: 1px;">💰 あなたの資産が今この瞬間も稼いでいます</div>
+        <div style="color: #F8FAFC; font-family: 'Inter', sans-serif; font-size: 3.0rem; font-weight: 700; letter-spacing: -1px;" id="pm-counter">¥ 0.0000</div>
+        <div style="color: #64748B; font-size: 0.85rem; margin-top: 4px;">（本日の累計不労所得）</div>
+        <div style="display: flex; justify-content: center; gap: 24px; margin-top: 20px; flex-wrap: wrap;">
+            <div style="color: #94A3B8; font-size: 0.82rem;"><span style="color:#3B82F6; font-weight:700;">⏱ 1秒</span> ¥{per_second_yen:.4f}</div>
+            <div style="color: #94A3B8; font-size: 0.82rem;"><span style="color:#3B82F6; font-weight:700;">⏱ 1分</span> ¥{per_minute * 10000:.2f}</div>
+            <div style="color: #94A3B8; font-size: 0.82rem;"><span style="color:#3B82F6; font-weight:700;">⏱ 1時間</span> ¥{hourly_income * 10000:,.1f}</div>
+            <div style="color: #94A3B8; font-size: 0.82rem;"><span style="color:#3B82F6; font-weight:700;">⏱ 1日</span> ¥{daily_income_yen:,.0f}</div>
+        </div>
+    </div>
+    <script>
+        var perSecond = {per_second_yen};
+        var total = 0;
+        var counterEl = document.getElementById('pm-counter');
+        setInterval(function() {{
+            total += perSecond;
+            counterEl.innerText = '¥ ' + total.toLocaleString('ja-JP', {{minimumFractionDigits: 4, maximumFractionDigits: 4}});
+        }}, 1000);
+    </script>
+    """
+    components.html(counter_html, height=220)
+    
+    # 時給換算カード
+    st.markdown("#### 💡 生活費との比較（あなたの不労所得で何が賄える？）")
+    life_items = [
+        {"icon": "☕", "name": "コーヒー1杯", "cost": 500},
+        {"icon": "📱", "name": "スマホ代 (月)", "cost": 8000},
+        {"icon": "🍽️", "name": "外食ランチ", "cost": 1000},
+        {"icon": "💡", "name": "電気代 (月)", "cost": 12000},
+        {"icon": "🏠", "name": "家賃 (月)", "cost": 80000},
+        {"icon": "✈️", "name": "海外旅行", "cost": 200000},
+    ]
+    li_cols = st.columns(3)
+    for idx, item in enumerate(life_items):
+        with li_cols[idx % 3]:
+            if daily_income_yen > 0:
+                hours_needed = item["cost"] / (hourly_income * 10000)
+                if hours_needed < 1:
+                    time_str = f"{hours_needed * 60:.0f}分"
+                elif hours_needed < 24:
+                    time_str = f"{hours_needed:.1f}時間"
+                else:
+                    time_str = f"{hours_needed / 24:.1f}日"
+            else:
+                time_str = "∞"
+            st.markdown(f'''<div class="fire-report-card fire-report-normal" style="margin-bottom:10px;">
+                <div style="font-size:1.5rem;">{item["icon"]}</div>
+                <div class="fire-report-title" style="color:#1E293B;">{item["name"]}</div>
+                <div style="color:#64748B; font-size:0.82rem;">¥{item["cost"]:,}</div>
+                <div class="fire-report-status" style="color:#3B82F6; margin-top:4px;">不労所得で{time_str}</div>
+            </div>''', unsafe_allow_html=True)
+
+# --- Tab 6: 日本版 恐怖＆強欲メーター ---
+with tabs[5]:
+    st.subheader("🎰 日本版 恐怖＆強欲メーター")
+    st.caption("5つの市場指標を統合し、現在の投資家心理を0（極度の恐怖）〜100（極度の強欲）で評価します。")
+    
+    @st.cache_data(ttl=600)
+    def calc_fear_greed():
+        import numpy as np
+        scores = {}
+        
+        # ① VIX（米国恐怖指数）
+        try:
+            vix = yf.Ticker("^VIX").history(period="5d")
+            vix_val = vix['Close'].iloc[-1]
+            scores['VIX'] = {'value': round(vix_val, 2), 'score': max(0, min(100, 100 - (vix_val - 12) * (100 / 28))), 'weight': 0.25}
+        except:
+            scores['VIX'] = {'value': None, 'score': 50, 'weight': 0.25}
+        
+        # ② 日経平均 vs 50日移動平均
+        try:
+            nk = yf.Ticker("^N225").history(period="80d")
+            ma50 = nk['Close'].rolling(50).mean().iloc[-1]
+            curr = nk['Close'].iloc[-1]
+            pct_above = ((curr - ma50) / ma50) * 100
+            scores['MA50'] = {'value': round(pct_above, 2), 'score': max(0, min(100, 50 + pct_above * 5)), 'weight': 0.25}
+        except:
+            scores['MA50'] = {'value': None, 'score': 50, 'weight': 0.25}
+        
+        # ③ 日経平均 vs 200日移動平均
+        try:
+            nk_long = yf.Ticker("^N225").history(period="250d")
+            ma200 = nk_long['Close'].rolling(200).mean().iloc[-1]
+            curr_l = nk_long['Close'].iloc[-1]
+            pct200 = ((curr_l - ma200) / ma200) * 100
+            scores['MA200'] = {'value': round(pct200, 2), 'score': max(0, min(100, 50 + pct200 * 3)), 'weight': 0.20}
+        except:
+            scores['MA200'] = {'value': None, 'score': 50, 'weight': 0.20}
+        
+        # ④ RSI (14日)
+        try:
+            nk_rsi = yf.Ticker("^N225").history(period="30d")
+            delta = nk_rsi['Close'].diff()
+            gain = delta.where(delta > 0, 0).rolling(14).mean()
+            loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
+            rs = gain / loss
+            rsi_val = (100 - (100 / (1 + rs))).iloc[-1]
+            scores['RSI'] = {'value': round(rsi_val, 1), 'score': rsi_val, 'weight': 0.15}
+        except:
+            scores['RSI'] = {'value': None, 'score': 50, 'weight': 0.15}
+        
+        # ⑤ 安全資産への逃避（金 vs 日経 20日リターン比較）
+        try:
+            gold = yf.Ticker("GC=F").history(period="30d")
+            nk_g = yf.Ticker("^N225").history(period="30d")
+            gold_ret = (gold['Close'].iloc[-1] / gold['Close'].iloc[-20] - 1) * 100
+            nk_ret = (nk_g['Close'].iloc[-1] / nk_g['Close'].iloc[-20] - 1) * 100
+            spread = nk_ret - gold_ret  # 株が勝っていればプラス（強欲）
+            scores['SAFE'] = {'value': round(spread, 2), 'score': max(0, min(100, 50 + spread * 5)), 'weight': 0.15}
+        except:
+            scores['SAFE'] = {'value': None, 'score': 50, 'weight': 0.15}
+        
+        # 加重平均スコア
+        total_score = sum(s['score'] * s['weight'] for s in scores.values())
+        return round(total_score, 1), scores
+    
+    fg_score, fg_details = calc_fear_greed()
+    
+    # ラベル判定
+    if fg_score <= 20: fg_label, fg_emoji, fg_color = "極度の恐怖", "😱", "#991B1B"
+    elif fg_score <= 40: fg_label, fg_emoji, fg_color = "恐怖", "😟", "#EF4444"
+    elif fg_score <= 60: fg_label, fg_emoji, fg_color = "中立", "😐", "#64748B"
+    elif fg_score <= 80: fg_label, fg_emoji, fg_color = "強欲", "😊", "#10B981"
+    else: fg_label, fg_emoji, fg_color = "極度の強欲", "🤑", "#065F46"
+    
+    # ゲージメーター (Plotly)
+    fig_fg = go.Figure(go.Indicator(
+        mode="gauge+number",
+        value=fg_score,
+        number={'suffix': '', 'font': {'size': 48, 'color': fg_color, 'family': 'Inter'}},
+        gauge={
+            'axis': {'range': [0, 100], 'tickwidth': 2, 'tickcolor': '#94A3B8'},
+            'bar': {'color': fg_color, 'thickness': 0.3},
+            'bgcolor': '#F1F5F9',
+            'borderwidth': 0,
+            'steps': [
+                {'range': [0, 20], 'color': '#FEE2E2'},
+                {'range': [20, 40], 'color': '#FECACA'},
+                {'range': [40, 60], 'color': '#F1F5F9'},
+                {'range': [60, 80], 'color': '#D1FAE5'},
+                {'range': [80, 100], 'color': '#A7F3D0'},
+            ],
+            'threshold': {'line': {'color': fg_color, 'width': 4}, 'thickness': 0.8, 'value': fg_score}
+        }
+    ))
+    fig_fg.update_layout(height=280, margin=dict(l=30, r=30, t=40, b=10), paper_bgcolor='rgba(0,0,0,0)', font={'family': 'Inter, Noto Sans JP'})
+    st.plotly_chart(fig_fg, use_container_width=True)
+    st.markdown(f'<div style="text-align:center; font-size:1.5rem; font-weight:700; color:{fg_color}; margin-top:-10px;">{fg_emoji} {fg_label}</div>', unsafe_allow_html=True)
+    
+    # 構成指標ミニカード
+    st.markdown("#### 📊 構成指標の内訳")
+    indicator_names = {'VIX': 'VIX恐怖指数', 'MA50': '日経 vs 50日MA', 'MA200': '日経 vs 200日MA', 'RSI': 'RSI (14日)', 'SAFE': '金 vs 株 (20日)'}
+    indicator_desc = {'VIX': '低い=楽観 / 高い=恐怖', 'MA50': 'MA上=強気 / MA下=弱気', 'MA200': '長期トレンド判定', 'RSI': '70超=買われすぎ / 30未満=売られすぎ', 'SAFE': '株優勢=強欲 / 金優勢=恐怖'}
+    fg_cols = st.columns(5)
+    for idx, (key, data) in enumerate(fg_details.items()):
+        with fg_cols[idx]:
+            sc = data['score']
+            sc_color = "#EF4444" if sc < 40 else ("#10B981" if sc > 60 else "#64748B")
+            val_str = str(data['value']) if data['value'] is not None else "N/A"
+            st.markdown(f'''<div class="fire-report-card fire-report-normal" style="padding:12px;">
+                <div style="font-size:0.78rem; font-weight:700; color:#1E293B; margin-bottom:4px;">{indicator_names[key]}</div>
+                <div style="font-size:1.3rem; font-weight:700; color:{sc_color};">{sc:.0f}</div>
+                <div style="font-size:0.7rem; color:#64748B;">{val_str}</div>
+                <div style="font-size:0.65rem; color:#94A3B8; margin-top:2px;">{indicator_desc[key]}</div>
+            </div>''', unsafe_allow_html=True)
+
+# --- Tab 7: 暴落プレイバック ストレステスト ---
+with tabs[6]:
+    st.subheader("🌊 暴落プレイバック ストレステスト")
+    st.caption("過去の歴史的暴落が「今」起きたら、あなたの資産はどうなるかをシミュレーションします。")
+    
+    # 暴落パターン定義
+    CRASH_PATTERNS = {
+        "リーマンショック (2008)": {"max_drop": -56.8, "months_to_bottom": 17, "months_to_recover": 65, "desc": "米国サブプライムローン危機。世界同時株安。", "curve": [0,-8,-15,-25,-32,-38,-42,-45,-48,-50,-52,-54,-55.5,-56,-56.5,-56.8,-56,-52,-48,-44,-40,-36,-32,-28,-24,-20,-16,-12,-8,-4,0]},
+        "コロナショック (2020)": {"max_drop": -33.9, "months_to_bottom": 1, "months_to_recover": 5, "desc": "COVID-19パンデミックによる急落。V字回復。", "curve": [0,-12,-25,-33.9,-28,-20,-12,-5,0]},
+        "ITバブル崩壊 (2000)": {"max_drop": -78.4, "months_to_bottom": 30, "months_to_recover": 180, "desc": "ドットコムバブルの崩壊。NASDAQが約80%下落。", "curve": [0,-5,-10,-18,-25,-30,-38,-45,-50,-55,-60,-65,-68,-72,-75,-77,-78,-78.4,-76,-72,-68,-64,-60,-55,-50,-45,-40,-35,-30,-25,-20,-15,-10,-5,0]},
+        "ブラックマンデー (1987)": {"max_drop": -22.6, "months_to_bottom": 0.1, "months_to_recover": 24, "desc": "1日でNYダウが22.6%下落。", "curve": [0,-22.6,-20,-18,-15,-12,-10,-8,-6,-4,-2,0]},
+        "日経バブル崩壊 (1990)": {"max_drop": -63.2, "months_to_bottom": 32, "months_to_recover": 408, "desc": "日経平均39,000円→14,000円台。回復に34年。", "curve": [0,-5,-10,-15,-20,-28,-35,-40,-45,-48,-50,-53,-55,-57,-59,-60,-61,-62,-63,-63.2,-62,-60,-58,-55,-52,-50,-48,-45,-42,-40,-38,-35,-30,-25,-20,-15,-10,-5,0]},
+    }
+    
+    # ポートフォリオ入力
+    st.markdown("#### 💼 ポートフォリオ入力")
+    crash_assets = {
+        "日本株（日経平均連動）": 1.0,
+        "米国株（S&P500連動）": 1.0,
+        "全世界株式（オルカン）": 0.9,
+        "先進国債券": 0.2,
+        "金（ゴールド）": -0.3,
+        "現金・預金": 0.0,
+    }
+    
+    ca_cols = st.columns(3)
+    portfolio = {}
+    for idx, (asset_name, _) in enumerate(crash_assets.items()):
+        with ca_cols[idx % 3]:
+            val = st.number_input(f"{asset_name} (万円)", 0.0, 100000.0, 0.0, step=50.0, key=f"crash_{idx}")
+            if val > 0:
+                portfolio[asset_name] = val
+    
+    total_portfolio = sum(portfolio.values())
+    if total_portfolio > 0:
+        st.markdown(f"**ポートフォリオ合計: {total_portfolio:,.0f} 万円**")
+    
+    # 暴落シナリオ選択
+    st.markdown("#### 💥 暴落シナリオ選択")
+    selected_crash = st.radio("シナリオを選んでください", list(CRASH_PATTERNS.keys()), horizontal=True)
+    crash = CRASH_PATTERNS[selected_crash]
+    
+    st.info(f"📖 {crash['desc']}")
+    
+    if total_portfolio > 0 and st.button("🔥 暴落シミュレーション実行", use_container_width=True, key="crash_btn"):
+        # シミュレーション実行
+        curve = crash['curve']
+        timeline_labels = [f"月{i}" for i in range(len(curve))]
+        
+        # 各資産の推移を計算
+        total_values = []
+        for step_pct in curve:
+            step_total = 0
+            for asset_name, amount in portfolio.items():
+                correlation = crash_assets.get(asset_name, 1.0)
+                adjusted_drop = step_pct * correlation
+                step_total += amount * (1 + adjusted_drop / 100)
+            total_values.append(step_total)
+        
+        # チャート描画
+        fig_crash = go.Figure()
+        colors_fill = ['rgba(239, 68, 68, 0.15)' if v < total_portfolio else 'rgba(16, 185, 129, 0.15)' for v in total_values]
+        
+        fig_crash.add_trace(go.Scatter(
+            x=timeline_labels, y=[total_portfolio] * len(curve),
+            mode='lines', line=dict(color='rgba(0,0,0,0)', width=0), hoverinfo='skip'
+        ))
+        fig_crash.add_trace(go.Scatter(
+            x=timeline_labels, y=total_values,
+            mode='lines', fill='tonexty',
+            line=dict(color='#EF4444', width=3),
+            fillcolor='rgba(239, 68, 68, 0.15)',
+            name='資産推移',
+            hovertemplate='%{x}<br>資産: %{y:,.0f}万円<extra></extra>'
+        ))
+        fig_crash.add_hline(y=total_portfolio, line_dash="dash", line_color="#3B82F6", line_width=2, annotation_text="現在の資産額")
+        
+        min_val = min(total_values)
+        fig_crash.update_layout(
+            title=f"📉 {selected_crash} シミュレーション結果",
+            xaxis_title="経過期間", yaxis_title="資産額 (万円)",
+            template="plotly_white", showlegend=False,
+            height=400
+        )
+        st.plotly_chart(fig_crash, use_container_width=True)
+        
+        # サマリーカード
+        max_loss = total_portfolio - min_val
+        max_loss_pct = (max_loss / total_portfolio) * 100
+        
+        sum_cols = st.columns(3)
+        with sum_cols[0]:
+            st.markdown(f'''<div class="fire-report-card fire-report-bear">
+                <div class="fire-report-title" style="color:#EF4444;">📉 最大下落額</div>
+                <div class="fire-report-status">-{max_loss:,.0f} 万円</div>
+                <div class="fire-report-amount">(-{max_loss_pct:.1f}%)</div>
+            </div>''', unsafe_allow_html=True)
+        with sum_cols[1]:
+            st.markdown(f'''<div class="fire-report-card fire-report-normal">
+                <div class="fire-report-title" style="color:#3B82F6;">📅 底打ちまで</div>
+                <div class="fire-report-status">約{crash["months_to_bottom"]}ヶ月</div>
+                <div class="fire-report-amount">最安値: {min_val:,.0f}万円</div>
+            </div>''', unsafe_allow_html=True)
+        with sum_cols[2]:
+            st.markdown(f'''<div class="fire-report-card fire-report-bull">
+                <div class="fire-report-title" style="color:#10B981;">📈 回復まで</div>
+                <div class="fire-report-status">約{crash["months_to_recover"]}ヶ月</div>
+                <div class="fire-report-amount">({crash["months_to_recover"] / 12:.1f}年)</div>
+            </div>''', unsafe_allow_html=True)
+        
+        # 追加投資シミュレーション
+        st.markdown("---")
+        st.markdown("#### 💡 もし底値で追加投資していたら？")
+        add_inv = st.number_input("底値での追加投資額 (万円)", 0.0, 100000.0, 100.0, step=50.0, key="add_inv")
+        if add_inv > 0:
+            recovery_gain = add_inv * (100 / (100 + crash['max_drop'])) - add_inv
+            st.success(f"底値で **{add_inv:,.0f}万円** を追加投資した場合、回復時点で **+{recovery_gain:,.0f}万円** の利益が見込めます（元本回復ベース）。")
+    elif total_portfolio == 0:
+        st.warning("上の入力欄にポートフォリオの金額を入力してください。")

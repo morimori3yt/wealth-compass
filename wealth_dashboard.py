@@ -235,7 +235,17 @@ tabs = st.tabs(["📊 マーケット状況", "📰 ニュース", "📅 カレ�
 # --- Tab 1: マーケット (世界の株価風・カスタマイズ版) ---
 with tabs[0]:
     with st.expander("⚙️ 表示設定（項目変更・カラーテーマ）", expanded=False):
-        selected_assets = st.multiselect("表示項目・順序の変更", options=list(ASSET_MASTER.keys()), default=default_assets)
+        selected_assets_base = st.multiselect("① 表示項目の追加・削除", options=list(ASSET_MASTER.keys()), default=default_assets)
+        
+        st.markdown("<div style='font-size:14px; font-weight:600; margin-top:10px; margin-bottom:5px;'>② パネル配置の並び替え（ドラッグ＆ドロップで上下に移動）</div>", unsafe_allow_html=True)
+        try:
+            from streamlit_sortables import sort_items
+            ordered_assets = sort_items(selected_assets_base, key="asset_sorter")
+            if not ordered_assets: ordered_assets = selected_assets_base
+        except ImportError:
+            ordered_assets = selected_assets_base
+            st.warning("ドラッグ＆ドロップ機能を使用するには `pip install streamlit-sortables` が必要です。")
+            
         bg_mode = st.radio("背景色設定", ["明るい (白)", "暗い (黒)"], horizontal=True)
         color_pattern = st.radio("騰落カラー設定", ["日本式 (上昇:赤 / 下落:緑)", "欧米式 (上昇:緑 / 下落:赤)"], horizontal=True)
 
@@ -276,12 +286,12 @@ with tabs[0]:
     st.subheader("🌎 グローバル・マーケット・ボード")
     
     # グリッドレイアウト
-    if not selected_assets:
+    if not ordered_assets:
         st.info("サイドバーから表示したい資産を選択してください。")
     else:
         # 4列のグリッド
         cols = st.columns(4)
-        for idx, name in enumerate(selected_assets):
+        for idx, name in enumerate(ordered_assets):
             with cols[idx % 4]:
                 render_market_tile(name, ASSET_MASTER[name])
 

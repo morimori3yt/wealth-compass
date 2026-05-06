@@ -99,35 +99,35 @@ def render_market_tile(name, symbol):
     pct = (diff / prev) * 100 if prev != 0 else 0
     is_up = diff >= 0
     
-    # 世界の株価風：背景色ヒートマップロジック
+    # モダン金融風：文字色とアクセントボーダー、バッジ背景色
     if "日本式" in color_pattern:
-        bg_up = "#4d0000" if is_dark else "#ffcccc"
-        bg_down = "#004d00" if is_dark else "#ccffcc"
-        line_up = "#ff6666" if is_dark else "#ff0000"
-        line_down = "#66ff66" if is_dark else "#008000"
+        color_up = "#EF4444"
+        color_down = "#10B981"
+        bg_badge_up = "rgba(239, 68, 68, 0.15)"
+        bg_badge_down = "rgba(16, 185, 129, 0.15)"
     else:
-        bg_up = "#004d00" if is_dark else "#ccffcc"
-        bg_down = "#4d0000" if is_dark else "#ffcccc"
-        line_up = "#66ff66" if is_dark else "#008000"
-        line_down = "#ff6666" if is_dark else "#ff0000"
+        color_up = "#10B981"
+        color_down = "#EF4444"
+        bg_badge_up = "rgba(16, 185, 129, 0.15)"
+        bg_badge_down = "rgba(239, 68, 68, 0.15)"
 
-    tile_bg = bg_up if is_up else bg_down
-    chart_line = line_up if is_up else line_down
-    text_col = "#ffffff" if is_dark else "#000000"
+    chart_line = color_up if is_up else color_down
+    badge_bg = bg_badge_up if is_up else bg_badge_down
     
     sign = "+" if is_up else ""
     fmt = ",.3f" if ("JPY" in symbol or "^TNX" in symbol or "^TYX" in symbol) else ",.2f"
     
     with st.container():
         st.markdown(f"""
-        <div class="m-tile" style="background-color: {tile_bg}; color: {text_col};">
+        <div class="m-tile">
+            <div class="m-tile-accent" style="background-color: {chart_line};"></div>
             <div class="m-tile-inner">
                 <div class="m-tile-left">
                     <div class="m-tile-name">{name}</div>
                 </div>
                 <div class="m-tile-right">
                     <div class="m-tile-price">{curr:{fmt}}</div>
-                    <div class="m-tile-diff">
+                    <div class="m-tile-badge" style="background-color: {badge_bg}; color: {chart_line};">
                         {sign}{diff:{fmt}} ({sign}{pct:.2f}%)
                     </div>
                 </div>
@@ -137,7 +137,7 @@ def render_market_tile(name, symbol):
         
         # Area Chart用の半透明塗りつぶし色を計算
         h = chart_line.lstrip('#')
-        fill_rgba = f"rgba({int(h[0:2], 16)}, {int(h[2:4], 16)}, {int(h[4:6], 16)}, 0.4)"
+        fill_rgba = f"rgba({int(h[0:2], 16)}, {int(h[2:4], 16)}, {int(h[4:6], 16)}, 0.15)"
         
         # 24時間(イントラデイ) Area Chart
         fig = go.Figure()
@@ -283,35 +283,67 @@ with tabs[0]:
 
     # カラーコード定義
     is_dark = bg_mode == "暗い (黒)"
-    theme_bg = "#121212" if is_dark else "#ffffff"
-    theme_card = "#1e1e1e" if is_dark else "#f8f9fa"
-    theme_text = "#ffffff" if is_dark else "#212529"
-    theme_border = "#333333" if is_dark else "#e9ecef"
+    theme_bg = "#0f172a" if is_dark else "#f8fafc"
+    theme_card = "#1e293b" if is_dark else "#ffffff"
+    theme_text = "#f1f5f9" if is_dark else "#1e293b"
+    theme_border = "#334155" if is_dark else "#e2e8f0"
+    theme_muted = "#94a3b8" if is_dark else "#64748b"
 
     # カスタムCSSインジェクション
     st.markdown(f"""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&family=Roboto+Mono:wght@500&display=swap');
-    html, body, [class*="css"] {{ font-family: 'Noto Sans JP', sans-serif; }}
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap');
+    html, body, [class*="css"] {{ font-family: 'Inter', 'Noto Sans JP', sans-serif; }}
 
-    div[data-testid="column"] {{ padding: 2px !important; }}
+    /* Streamlit背景の上書き（全体をよりモダンに） */
+    .stApp {{ background-color: {theme_bg}; }}
 
+    div[data-testid="column"] {{ padding: 4px !important; }}
+
+    /* モダンカードデザイン */
     .m-tile {{
+        background-color: {theme_card};
         border: 1px solid {theme_border};
-        padding: 4px 6px 0px 6px;
-        border-radius: 2px;
-        margin-bottom: 2px;
-        transition: transform 0.1s;
+        padding: 12px 14px 4px 14px;
+        border-radius: 12px;
+        margin-bottom: 6px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+        transition: all 0.2s ease-in-out;
+        position: relative;
+        overflow: hidden;
     }}
-    .m-tile:hover {{ transform: scale(1.02); z-index: 10; position: relative; border-color: #aaa; box-shadow: 0 0 10px rgba(0,0,0,0.3); }}
+    .m-tile:hover {{ 
+        transform: translateY(-2px); 
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        border-color: {theme_muted};
+        z-index: 10;
+    }}
 
-    .m-tile-inner {{ display: flex; justify-content: space-between; align-items: center; width: 100%; }}
-    .m-tile-left {{ text-align: left; padding-top: 2px; }}
-    .m-tile-right {{ text-align: right; }}
+    /* 左端のカラーアクセントライン用のクラス */
+    .m-tile-accent {{
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 4px;
+    }}
 
-    .m-tile-name {{ font-size: 0.85rem; font-weight: 700; line-height: 1.1; margin-bottom: 0px; }}
-    .m-tile-price {{ font-family: 'Roboto Mono', monospace; font-size: 1.25rem; font-weight: 700; line-height: 1.0; margin-bottom: 1px; }}
-    .m-tile-diff {{ font-size: 0.8rem; font-weight: 700; line-height: 1.0; margin-bottom: 0px; }}
+    .m-tile-inner {{ display: flex; justify-content: space-between; align-items: flex-end; width: 100%; }}
+    .m-tile-left {{ text-align: left; }}
+    .m-tile-right {{ text-align: right; display: flex; flex-direction: column; align-items: flex-end; }}
+
+    .m-tile-name {{ font-size: 0.9rem; font-weight: 600; color: {theme_text}; margin-bottom: 4px; }}
+    .m-tile-price {{ font-family: 'Inter', sans-serif; font-size: 1.35rem; font-weight: 700; color: {theme_text}; line-height: 1.1; margin-bottom: 4px; letter-spacing: -0.5px; }}
+    
+    /* ピル型バッジデザイン */
+    .m-tile-badge {{ 
+        font-family: 'Inter', sans-serif;
+        font-size: 0.75rem; 
+        font-weight: 600; 
+        padding: 2px 6px; 
+        border-radius: 6px;
+        display: inline-block;
+    }}
     </style>
     """, unsafe_allow_html=True)
 

@@ -30,8 +30,9 @@ ASSET_MASTER = {
     # 株式指数 (日本・アジア)
     "日経平均": "^N225", "TOPIX": "^TPX", "マザーズ": "250.T", 
     "上海総合": "000001.SS", "香港ハンセン": "^HSI", "台湾加権": "^TWII", "インドSensex": "^BSESN",
-    # 株式指数 (米国・欧州)
+    # 株式指数 (米国・欧州・グローバル)
     "NYダウ": "^DJI", "S&P 500": "^GSPC", "ナスダック": "^IXIC", "NASDAQ 100": "^NDX", "SOX指数": "^SOX", "FANG+": "FNGS", "ラッセル2000": "^RUT", "VIX恐怖指数": "^VIX",
+    "オルカン (ACWI)": "ACWI",
     "DAX (独)": "^GDAXI", "FTSE (英)": "^FTSE", "CAC (仏)": "^FCHI", "SMI (瑞)": "^SSMI",
     # 為替
     "ドル円": "JPY=X", "ユーロ円": "EURJPY=X", "ポンド円": "GBPJPY=X", "豪ドル円": "AUDJPY=X", 

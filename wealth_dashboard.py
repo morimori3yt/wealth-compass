@@ -659,18 +659,20 @@ with tabs[4]:
     per_second = per_minute / 60
     per_second_yen = per_second * 10000  # 円換算
     daily_income_yen = daily_income * 10000
+    annual_income_yen = annual_income * 10000
     
-    # JavaScriptリアルタイムカウンター
+    # JavaScriptリアルタイムカウンター（スマホ対応: グリッドレイアウト）
     counter_html = f"""
-    <div style="background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%); border-radius: 16px; padding: 30px; text-align: center; margin: 16px 0; box-shadow: 0 8px 24px rgba(0,0,0,0.2); border: 1px solid #334155;">
+    <div style="background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%); border-radius: 16px; padding: 24px 16px; text-align: center; margin: 16px 0; box-shadow: 0 8px 24px rgba(0,0,0,0.2); border: 1px solid #334155;">
         <div style="color: #94A3B8; font-size: 0.95rem; font-weight: 600; margin-bottom: 8px; letter-spacing: 1px;">💰 あなたの資産が今この瞬間も稼いでいます</div>
-        <div style="color: #F8FAFC; font-family: 'Inter', sans-serif; font-size: 3.0rem; font-weight: 700; letter-spacing: -1px;" id="pm-counter">¥ 0.0000</div>
+        <div style="color: #F8FAFC; font-family: 'Inter', sans-serif; font-size: 2.5rem; font-weight: 700; letter-spacing: -1px;" id="pm-counter">¥ 0.0000</div>
         <div style="color: #64748B; font-size: 0.85rem; margin-top: 4px;">（本日の累計不労所得）</div>
-        <div style="display: flex; justify-content: center; gap: 24px; margin-top: 20px; flex-wrap: wrap;">
-            <div style="color: #94A3B8; font-size: 0.82rem;"><span style="color:#3B82F6; font-weight:700;">⏱ 1秒</span> ¥{per_second_yen:.4f}</div>
-            <div style="color: #94A3B8; font-size: 0.82rem;"><span style="color:#3B82F6; font-weight:700;">⏱ 1分</span> ¥{per_minute * 10000:.2f}</div>
-            <div style="color: #94A3B8; font-size: 0.82rem;"><span style="color:#3B82F6; font-weight:700;">⏱ 1時間</span> ¥{hourly_income * 10000:,.1f}</div>
-            <div style="color: #94A3B8; font-size: 0.82rem;"><span style="color:#3B82F6; font-weight:700;">⏱ 1日</span> ¥{daily_income_yen:,.0f}</div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; margin-top: 16px; padding: 0 8px;">
+            <div style="background: rgba(59,130,246,0.1); border-radius: 8px; padding: 8px 6px;"><div style="color:#3B82F6; font-weight:700; font-size:0.75rem;">⏱ 1秒</div><div style="color:#F8FAFC; font-size:0.85rem; font-weight:600;">¥{per_second_yen:.4f}</div></div>
+            <div style="background: rgba(59,130,246,0.1); border-radius: 8px; padding: 8px 6px;"><div style="color:#3B82F6; font-weight:700; font-size:0.75rem;">⏱ 1分</div><div style="color:#F8FAFC; font-size:0.85rem; font-weight:600;">¥{per_minute * 10000:.2f}</div></div>
+            <div style="background: rgba(59,130,246,0.1); border-radius: 8px; padding: 8px 6px;"><div style="color:#3B82F6; font-weight:700; font-size:0.75rem;">⏱ 1時間</div><div style="color:#F8FAFC; font-size:0.85rem; font-weight:600;">¥{hourly_income * 10000:,.1f}</div></div>
+            <div style="background: rgba(59,130,246,0.1); border-radius: 8px; padding: 8px 6px;"><div style="color:#3B82F6; font-weight:700; font-size:0.75rem;">⏱ 1日</div><div style="color:#F8FAFC; font-size:0.85rem; font-weight:600;">¥{daily_income_yen:,.0f}</div></div>
+            <div style="background: rgba(16,185,129,0.15); border-radius: 8px; padding: 8px 6px;"><div style="color:#10B981; font-weight:700; font-size:0.75rem;">⏱ 1年</div><div style="color:#F8FAFC; font-size:0.85rem; font-weight:600;">¥{annual_income_yen:,.0f}</div></div>
         </div>
     </div>
     <script>
@@ -683,7 +685,7 @@ with tabs[4]:
         }}, 1000);
     </script>
     """
-    components.html(counter_html, height=220)
+    components.html(counter_html, height=280)
     
     # 時給換算カード
     st.markdown("#### 💡 生活費との比較（あなたの不労所得で何が賄える？）")
@@ -692,8 +694,8 @@ with tabs[4]:
         {"icon": "📱", "name": "スマホ代 (月)", "cost": 8000},
         {"icon": "🍽️", "name": "外食ランチ", "cost": 1000},
         {"icon": "💡", "name": "電気代 (月)", "cost": 12000},
-        {"icon": "🏠", "name": "家賃 (月)", "cost": 80000},
-        {"icon": "✈️", "name": "海外旅行", "cost": 200000},
+        {"icon": "🏠", "name": "家賃 (月)", "cost": 150000},
+        {"icon": "✈️", "name": "海外旅行", "cost": 400000},
     ]
     li_cols = st.columns(3)
     for idx, item in enumerate(life_items):

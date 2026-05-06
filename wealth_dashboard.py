@@ -691,8 +691,8 @@ with tabs[4]:
     st.markdown("#### 💡 生活費との比較（あなたの不労所得で何が賄える？）")
     life_items = [
         {"icon": "☕", "name": "コーヒー1杯", "cost": 500},
-        {"icon": "📱", "name": "スマホ代 (月)", "cost": 8000},
         {"icon": "🍽️", "name": "外食ランチ", "cost": 1000},
+        {"icon": "📱", "name": "スマホ代 (月)", "cost": 8000},
         {"icon": "💡", "name": "電気代 (月)", "cost": 12000},
         {"icon": "🏠", "name": "家賃 (月)", "cost": 150000},
         {"icon": "✈️", "name": "海外旅行", "cost": 400000},
@@ -907,12 +907,9 @@ with tabs[6]:
     
     st.info(f"📖 {crash['desc']}")
     
+    # シミュレーション実行ボタン → 結果をsession_stateに保存
     if total_portfolio > 0 and st.button("🔥 暴落シミュレーション実行", use_container_width=True, key="crash_btn"):
-        # シミュレーション実行
         curve = crash['curve']
-        timeline_labels = [f"月{i}" for i in range(len(curve))]
-        
-        # 各資産の推移を計算
         total_values = []
         for step_pct in curve:
             step_total = 0
@@ -921,13 +918,23 @@ with tabs[6]:
                 adjusted_drop = step_pct * correlation
                 step_total += amount * (1 + adjusted_drop / 100)
             total_values.append(step_total)
+        st.session_state['crash_result'] = {
+            'total_values': total_values, 'total_portfolio': total_portfolio,
+            'selected_crash': selected_crash, 'crash': crash, 'curve': curve
+        }
+    elif total_portfolio == 0:
+        st.warning("上の入力欄にポートフォリオの金額を入力してください。")
+    
+    # 結果表示（session_stateから読み出し → 数値変更でも消えない）
+    if 'crash_result' in st.session_state:
+        cr = st.session_state['crash_result']
+        total_values = cr['total_values']
+        tp = cr['total_portfolio']
+        timeline_labels = [f"月{i}" for i in range(len(cr['curve']))]
         
-        # チャート描画
         fig_crash = go.Figure()
-        colors_fill = ['rgba(239, 68, 68, 0.15)' if v < total_portfolio else 'rgba(16, 185, 129, 0.15)' for v in total_values]
-        
         fig_crash.add_trace(go.Scatter(
-            x=timeline_labels, y=[total_portfolio] * len(curve),
+            x=timeline_labels, y=[tp] * len(cr['curve']),
             mode='lines', line=dict(color='rgba(0,0,0,0)', width=0), hoverinfo='skip'
         ))
         fig_crash.add_trace(go.Scatter(
@@ -938,20 +945,18 @@ with tabs[6]:
             name='資産推移',
             hovertemplate='%{x}<br>資産: %{y:,.0f}万円<extra></extra>'
         ))
-        fig_crash.add_hline(y=total_portfolio, line_dash="dash", line_color="#3B82F6", line_width=2, annotation_text="現在の資産額")
+        fig_crash.add_hline(y=tp, line_dash="dash", line_color="#3B82F6", line_width=2, annotation_text="現在の資産額")
         
         min_val = min(total_values)
         fig_crash.update_layout(
-            title=f"📉 {selected_crash} シミュレーション結果",
+            title=f"📉 {cr['selected_crash']} シミュレーション結果",
             xaxis_title="経過期間", yaxis_title="資産額 (万円)",
-            template="plotly_white", showlegend=False,
-            height=400
+            template="plotly_white", showlegend=False, height=400
         )
         st.plotly_chart(fig_crash, use_container_width=True)
         
-        # サマリーカード
-        max_loss = total_portfolio - min_val
-        max_loss_pct = (max_loss / total_portfolio) * 100
+        max_loss = tp - min_val
+        max_loss_pct = (max_loss / tp) * 100 if tp > 0 else 0
         
         sum_cols = st.columns(3)
         with sum_cols[0]:
@@ -963,22 +968,20 @@ with tabs[6]:
         with sum_cols[1]:
             st.markdown(f'''<div class="fire-report-card fire-report-normal">
                 <div class="fire-report-title" style="color:#3B82F6;">📅 底打ちまで</div>
-                <div class="fire-report-status">約{crash["months_to_bottom"]}ヶ月</div>
+                <div class="fire-report-status">約{cr['crash']['months_to_bottom']}ヶ月</div>
                 <div class="fire-report-amount">最安値: {min_val:,.0f}万円</div>
             </div>''', unsafe_allow_html=True)
         with sum_cols[2]:
             st.markdown(f'''<div class="fire-report-card fire-report-bull">
                 <div class="fire-report-title" style="color:#10B981;">📈 回復まで</div>
-                <div class="fire-report-status">約{crash["months_to_recover"]}ヶ月</div>
-                <div class="fire-report-amount">({crash["months_to_recover"] / 12:.1f}年)</div>
+                <div class="fire-report-status">約{cr['crash']['months_to_recover']}ヶ月</div>
+                <div class="fire-report-amount">({cr['crash']['months_to_recover'] / 12:.1f}年)</div>
             </div>''', unsafe_allow_html=True)
         
-        # 追加投資シミュレーション
+        # 追加投資シミュレーション（ボタンの外なので数値変更で即再計算される）
         st.markdown("---")
         st.markdown("#### 💡 もし底値で追加投資していたら？")
         add_inv = st.number_input("底値での追加投資額 (万円)", 0.0, 100000.0, 100.0, step=50.0, key="add_inv")
         if add_inv > 0:
-            recovery_gain = add_inv * (100 / (100 + crash['max_drop'])) - add_inv
+            recovery_gain = add_inv * (100 / (100 + cr['crash']['max_drop'])) - add_inv
             st.success(f"底値で **{add_inv:,.0f}万円** を追加投資した場合、回復時点で **+{recovery_gain:,.0f}万円** の利益が見込めます（元本回復ベース）。")
-    elif total_portfolio == 0:
-        st.warning("上の入力欄にポートフォリオの金額を入力してください。")

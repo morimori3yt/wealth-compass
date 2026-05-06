@@ -240,11 +240,14 @@ with tabs[0]:
         st.markdown("<div style='font-size:14px; font-weight:600; margin-top:10px; margin-bottom:5px;'>② パネル配置の並び替え（ドラッグ＆ドロップで上下に移動）</div>", unsafe_allow_html=True)
         try:
             from streamlit_sortables import sort_items
-            ordered_assets = sort_items(selected_assets_base, key="asset_sorter")
-            if not ordered_assets: ordered_assets = selected_assets_base
-        except ImportError:
+            sortable_data = [{'header': '以下の項目をドラッグして並び替えてください', 'items': selected_assets_base}]
+            sorted_res = sort_items(sortable_data, key="asset_sorter", multi_containers=True)
+            if sorted_res and len(sorted_res) > 0 and 'items' in sorted_res[0]:
+                ordered_assets = sorted_res[0]['items']
+            else:
+                ordered_assets = selected_assets_base
+        except Exception as e:
             ordered_assets = selected_assets_base
-            st.warning("ドラッグ＆ドロップ機能を使用するには `pip install streamlit-sortables` が必要です。")
             
         bg_mode = st.radio("背景色設定", ["明るい (白)", "暗い (黒)"], horizontal=True)
         color_pattern = st.radio("騰落カラー設定", ["日本式 (上昇:赤 / 下落:緑)", "欧米式 (上昇:緑 / 下落:赤)"], horizontal=True)

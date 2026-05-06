@@ -289,7 +289,7 @@ with tabs[0]:
     theme_border = "#334155" if is_dark else "#e2e8f0"
     theme_muted = "#94a3b8" if is_dark else "#64748b"
 
-    # カスタムCSSインジェクション
+    # カスタムCSSインジェクション（全タブ統一プレミアムUI）
     st.markdown(f"""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap');
@@ -297,7 +297,24 @@ with tabs[0]:
 
     div[data-testid="column"] {{ padding: 4px !important; }}
 
-    /* モダンカードデザイン */
+    /* ============================
+       共通タブバーのスタイル
+       ============================ */
+    .stTabs [data-baseweb="tab-list"] {{ gap: 8px; }}
+    .stTabs [data-baseweb="tab"] {{
+        font-weight: 600;
+        font-size: 0.95rem;
+        padding: 10px 20px;
+        border-radius: 8px 8px 0 0;
+    }}
+    .stTabs [aria-selected="true"] {{
+        border-bottom: 3px solid #3B82F6 !important;
+        color: #3B82F6 !important;
+    }}
+
+    /* ============================
+       Tab1: マーケット — モダンカードデザイン
+       ============================ */
     .m-tile {{
         background-color: {theme_card};
         border: 1px solid {theme_border};
@@ -315,31 +332,188 @@ with tabs[0]:
         border-color: {theme_muted};
         z-index: 10;
     }}
-
-    /* 左端のカラーアクセントライン用のクラス */
     .m-tile-accent {{
-        position: absolute;
-        left: 0;
-        top: 0;
-        bottom: 0;
-        width: 4px;
+        position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
     }}
-
     .m-tile-inner {{ display: flex; justify-content: space-between; align-items: flex-end; width: 100%; }}
     .m-tile-left {{ text-align: left; }}
     .m-tile-right {{ text-align: right; display: flex; flex-direction: column; align-items: flex-end; }}
-
     .m-tile-name {{ font-size: 0.9rem; font-weight: 600; color: {theme_text}; margin-bottom: 4px; }}
     .m-tile-price {{ font-family: 'Inter', sans-serif; font-size: 1.35rem; font-weight: 700; color: {theme_text}; line-height: 1.1; margin-bottom: 4px; letter-spacing: -0.5px; }}
-    
-    /* ピル型バッジデザイン */
     .m-tile-badge {{ 
-        font-family: 'Inter', sans-serif;
-        font-size: 0.75rem; 
-        font-weight: 600; 
-        padding: 2px 6px; 
-        border-radius: 6px;
+        font-family: 'Inter', sans-serif; font-size: 0.75rem; font-weight: 600; 
+        padding: 2px 6px; border-radius: 6px; display: inline-block;
+    }}
+
+    /* ============================
+       Tab2: ニュース — カード＆バッジ
+       ============================ */
+    .news-section-header {{
+        font-size: 1.2rem;
+        font-weight: 700;
+        padding: 10px 16px;
+        border-radius: 10px;
+        margin-bottom: 12px;
+        background: linear-gradient(135deg, #1E293B 0%, #334155 100%);
+        color: #F8FAFC;
+        letter-spacing: 0.5px;
+    }}
+    .news-card {{
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-left: 4px solid #3B82F6;
+        border-radius: 10px;
+        padding: 12px 16px;
+        margin-bottom: 8px;
+        transition: all 0.2s ease;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }}
+    .news-card:hover {{
+        transform: translateX(4px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        border-left-color: #2563EB;
+    }}
+    .news-card a {{
+        color: #1E293B;
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 0.92rem;
+        line-height: 1.5;
+        display: block;
+    }}
+    .news-card a:hover {{ color: #3B82F6; }}
+    .news-meta {{
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 6px;
+        font-size: 0.78rem;
+        color: #64748b;
+    }}
+    .news-time-badge {{
+        background: #EFF6FF;
+        color: #3B82F6;
+        padding: 2px 8px;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 0.72rem;
+    }}
+    .news-source {{
+        color: #94A3B8;
+        font-weight: 500;
+    }}
+
+    /* ============================
+       Tab3: カレンダー — 凡例カード
+       ============================ */
+    .guide-box {{
+        background: linear-gradient(135deg, #F8FAFC 0%, #EFF6FF 100%);
+        border: 1px solid #CBD5E1;
+        border-radius: 14px;
+        padding: 20px 24px;
+        margin-bottom: 16px;
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.04);
+    }}
+    .guide-title {{
+        font-size: 1.0rem;
+        font-weight: 700;
+        color: #1E293B;
+        margin-bottom: 10px;
+        padding-bottom: 6px;
+        border-bottom: 2px solid #3B82F6;
         display: inline-block;
+    }}
+    .guide-grid {{
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+    }}
+    .guide-item {{
+        background: #ffffff;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 8px 12px;
+        font-size: 0.85rem;
+        color: #334155;
+        transition: background 0.15s;
+    }}
+    .guide-item:hover {{ background: #F1F5F9; }}
+    .guide-item b {{ color: #1E293B; }}
+
+    /* ============================
+       Tab4: FIRE — パネル・ボタン・レポート
+       ============================ */
+    .rev-panel {{
+        background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
+        color: #F8FAFC;
+        border-radius: 14px;
+        padding: 20px;
+        margin: 12px 0;
+        box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+        border: 1px solid #334155;
+    }}
+    .rev-panel div[style*="border-bottom"] {{
+        border-bottom-color: #475569 !important;
+        font-size: 1.1rem;
+        letter-spacing: 0.5px;
+    }}
+
+    .fire-report-card {{
+        border-radius: 12px;
+        padding: 16px;
+        text-align: center;
+        border: 1px solid #E2E8F0;
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+        transition: all 0.2s ease;
+        position: relative;
+        overflow: hidden;
+    }}
+    .fire-report-card:hover {{
+        transform: translateY(-2px);
+        box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+    }}
+    .fire-report-card::before {{
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        height: 4px;
+    }}
+    .fire-report-normal {{ background: #F0F9FF; }}
+    .fire-report-normal::before {{ background: linear-gradient(90deg, #3B82F6, #60A5FA); }}
+    .fire-report-bull {{ background: #F0FDF4; }}
+    .fire-report-bull::before {{ background: linear-gradient(90deg, #10B981, #34D399); }}
+    .fire-report-bear {{ background: #FEF2F2; }}
+    .fire-report-bear::before {{ background: linear-gradient(90deg, #EF4444, #F87171); }}
+    .fire-report-title {{ font-weight: 700; font-size: 1.0rem; margin-bottom: 8px; }}
+    .fire-report-status {{ font-weight: 700; font-size: 0.95rem; color: #1E293B; margin-bottom: 4px; }}
+    .fire-report-amount {{ font-weight: 600; font-size: 0.88rem; color: #475569; }}
+
+    /* Streamlitボタンのプレミアムスタイル */
+    .stButton > button {{
+        background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
+        color: #ffffff;
+        border: none;
+        border-radius: 10px;
+        font-weight: 600;
+        font-size: 0.95rem;
+        padding: 10px 20px;
+        transition: all 0.25s ease;
+        box-shadow: 0 4px 6px rgba(59, 130, 246, 0.25);
+    }}
+    .stButton > button:hover {{
+        background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
+        box-shadow: 0 6px 12px rgba(59, 130, 246, 0.35);
+        transform: translateY(-1px);
+    }}
+    .stButton > button:active {{
+        transform: translateY(0px);
+        box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
+    }}
+
+    /* 共通ヘッダースタイル */
+    h1 {{
+        letter-spacing: 1px;
+        color: #1E293B;
     }}
     </style>
     """, unsafe_allow_html=True)
@@ -361,18 +535,20 @@ with tabs[1]:
     st.subheader("📰 最新経済ニュース (自動更新)")
     n_c1, n_c2 = st.columns(2)
     with n_c1:
-        st.markdown("### 🇯🇵 日本: 経済・産業・社会情勢")
+        st.markdown('<div class="news-section-header">🇯🇵 日本: 経済・産業・社会情勢</div>', unsafe_allow_html=True)
         jp_news = fetch_latest_news("JP")
         if jp_news:
             for n in jp_news:
-                st.markdown(f'<a href="{n.link}" target="_blank" class="n-title">{n.title}</a><div class="n-meta"><span class="n-time-tag">⏱ {n.rel_time}</span> | {n.source.get("title", "Google News")}</div>', unsafe_allow_html=True)
+                source_name = n.source.get('title', 'Google News')
+                st.markdown(f'<div class="news-card"><a href="{n.link}" target="_blank">{n.title}</a><div class="news-meta"><span class="news-time-badge">⏱ {n.rel_time}</span><span class="news-source">{source_name}</span></div></div>', unsafe_allow_html=True)
         else: st.info("現在、表示できる最新ニュースはありません。")
     with n_c2:
-        st.markdown("### 🇺🇸 米国: 経済・産業・社会情勢")
+        st.markdown('<div class="news-section-header">🇺🇸 米国: 経済・産業・社会情勢</div>', unsafe_allow_html=True)
         us_news = fetch_latest_news("US")
         if us_news:
             for n in us_news:
-                st.markdown(f'<a href="{n.link}" target="_blank" class="n-title">{n.title}</a><div class="n-meta"><span class="n-time-tag">⏱ {n.rel_time}</span> | {n.source.get("title", "Google News")}</div>', unsafe_allow_html=True)
+                source_name = n.source.get('title', 'Google News')
+                st.markdown(f'<div class="news-card"><a href="{n.link}" target="_blank">{n.title}</a><div class="news-meta"><span class="news-time-badge">⏱ {n.rel_time}</span><span class="news-source">{source_name}</span></div></div>', unsafe_allow_html=True)
         else: st.info("現在、表示できる最新ニュースはありません。")
 
 # --- Tab 3: カレンダー ---
@@ -440,14 +616,14 @@ with tabs[3]:
             st.session_state['rev_results'] = sim_rev.find_all_fire_ages({'currentAge': age, 'currentAssets': total_curr, 'nisaAssets': c_nisa, 'nisaLimitRemaining': nisa_rem, 'taxRate': tax_rate, 'monthlyInvestment': m_inv, 'expectedReturnPre': r_pre, 'expectedReturnPost': r_post, 'expectedReturnPreBull': r_pre + r_bull, 'expectedReturnPostBull': r_post + r_bull, 'expectedReturnPreBear': max(0, r_pre - r_bear), 'expectedReturnPostBear': max(0, r_post - r_bear), 'livingExpense': l_exp, 'inflationRate': inf, 'pensionAmount': p_val, 'pensionAge': p_age, 'retirementAllowance': ret_al})
         if st.session_state['rev_results']:
             res = st.session_state['rev_results']
-            st.markdown(f'<div class="rev-panel"><div style="font-weight:700; margin-bottom:8px; border-bottom:1px solid #ccc;">最短FIRE可能年齢</div><div style="color:#28a745;">🚀 強気: <b>{res["強気"] if res["強気"] else "不可"}歳</b></div><div style="color:#58a6ff;">📊 通常: <b>{res["通常"] if res["通常"] else "不可"}歳</b></div><div style="color:#dc3545;">⚠️ 弱気: <b>{res["弱気"] if res["弱気"] else "不可"}歳</b></div></div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="rev-panel"><div style="font-weight:700; margin-bottom:8px; border-bottom:1px solid #475569; font-size:1.1rem;">最短FIRE可能年齢</div><div style="color:#10B981;">🚀 強気: <b>{res["強気"] if res["強気"] else "不可"}歳</b></div><div style="color:#3B82F6;">📊 通常: <b>{res["通常"] if res["通常"] else "不可"}歳</b></div><div style="color:#EF4444;">⚠️ 弱気: <b>{res["弱気"] if res["弱気"] else "不可"}歳</b></div></div>', unsafe_allow_html=True)
             if res['通常'] and st.button("通常結果を適用"): st.session_state['fire_age_val'] = res['通常']; st.rerun()
 
     with f_out:
         sim = FIRESimulator()
         all_res = sim.calculate({'currentAge': age, 'currentAssets': total_curr, 'nisaAssets': c_nisa, 'nisaLimitRemaining': nisa_rem, 'taxRate': tax_rate, 'monthlyInvestment': m_inv, 'expectedReturnPre': r_pre, 'expectedReturnPost': r_post, 'expectedReturnPreBull': r_pre + r_bull, 'expectedReturnPostBull': r_post + r_bull, 'expectedReturnPreBear': max(0, r_pre - r_bear), 'expectedReturnPostBear': max(0, r_post - r_bear), 'fireAge': f_age, 'livingExpense': l_exp, 'inflationRate': inf, 'pensionAmount': p_val, 'pensionAge': p_age, 'retirementAllowance': ret_al})
         fig = go.Figure()
-        clrs = {"通常": "#58a6ff", "強気": "#28a745", "弱気": "#dc3545"}
+        clrs = {"通常": "#3B82F6", "強気": "#10B981", "弱気": "#EF4444"}
         for n in show_scen:
             df_h = pd.DataFrame(all_res[n]['history'])
             fig.add_trace(go.Scatter(x=df_h['age'], y=df_h['totalAssets'], name=n, line=dict(color=clrs[n], width=3), customdata=df_h['age'], hovertemplate="%{customdata}歳<br>資産: %{y:,.0f} 万円<extra></extra>"))
@@ -455,6 +631,10 @@ with tabs[3]:
         st.plotly_chart(fig, use_container_width=True)
         st.subheader("📋 シミュレーション診断レポート")
         rep_cols = st.columns(3)
+        scen_css = {"通常": "fire-report-normal", "強気": "fire-report-bull", "弱気": "fire-report-bear"}
         for idx, n in enumerate(show_scen):
             r = all_res[n]
-            with rep_cols[idx]: st.markdown(f'<div style="background:#f8f9fa; padding:10px; border-radius:6px; border:1px solid #ddd; text-align:center;"><div style="font-weight:700; color:{clrs[n]};">{n}シナリオ</div><div style="font-weight:700; color:#333;">{"✅ 100歳まで安泰" if not r["exhaustionAge"] else f"⚠️ {r["exhaustionAge"]}歳で枯渇"}</div><div style="font-weight:700; color:#333;">100歳時: {r["finalAssets"]:,.0f}万円</div></div>', unsafe_allow_html=True)
+            css_class = scen_css.get(n, "fire-report-normal")
+            status_text = "✅ 100歳まで安泰" if not r['exhaustionAge'] else f"⚠️ {r['exhaustionAge']}歳で枯渇"
+            with rep_cols[idx]:
+                st.markdown(f'<div class="fire-report-card {css_class}"><div class="fire-report-title" style="color:{clrs[n]};">{n}シナリオ</div><div class="fire-report-status">{status_text}</div><div class="fire-report-amount">100歳時: {r["finalAssets"]:,.0f}万円</div></div>', unsafe_allow_html=True)

@@ -242,6 +242,7 @@ with tabs[0]:
             st.session_state['master_order'] = default_assets.copy()
             st.session_state['sort_key_suffix'] = 0
             st.session_state['last_selected_set'] = set(default_assets)
+            st.session_state['sortable_needs_rerun'] = True # 初回描画バグ回避用のフラグ
             
         current_set = set(selected_assets_base)
         last_set = st.session_state['last_selected_set']
@@ -259,6 +260,11 @@ with tabs[0]:
             st.session_state['master_order'] = new_order
             st.session_state['last_selected_set'] = current_set
             st.session_state['sort_key_suffix'] += 1 # 強制リロードのためキーを更新
+
+        # 初回のみ、カスタムコンポーネントが空白になるのを防ぐため強制再描画
+        if st.session_state.get('sortable_needs_rerun'):
+            st.session_state['sortable_needs_rerun'] = False
+            st.rerun()
 
         st.markdown("<div style='font-size:14px; font-weight:600; margin-top:10px; margin-bottom:5px;'>② パネル配置の並び替え（ドラッグ＆ドロップで上下に移動）</div>", unsafe_allow_html=True)
         try:

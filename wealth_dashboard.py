@@ -234,7 +234,7 @@ tabs = st.tabs(["📊 マーケット状況", "📰 ニュース", "📅 カレ�
 
 # --- Tab 1: マーケット (世界の株価風・カスタマイズ版) ---
 with tabs[0]:
-    with st.expander("⚙️ 表示設定（項目変更・カラーテーマ）", expanded=False):
+    with st.expander("⚙️ 表示設定（項目変更・カラーテーマ）", expanded=True):
         selected_assets_base = st.multiselect("① 表示項目の追加・削除", options=list(ASSET_MASTER.keys()), default=default_assets)
         
         # 状態同期ロジック: 追加/削除とドラッグ順序の保持
@@ -242,7 +242,6 @@ with tabs[0]:
             st.session_state['master_order'] = default_assets.copy()
             st.session_state['sort_key_suffix'] = 0
             st.session_state['last_selected_set'] = set(default_assets)
-            st.session_state['sortable_needs_rerun'] = True # 初回描画バグ回避用のフラグ
             
         current_set = set(selected_assets_base)
         last_set = st.session_state['last_selected_set']
@@ -260,11 +259,6 @@ with tabs[0]:
             st.session_state['master_order'] = new_order
             st.session_state['last_selected_set'] = current_set
             st.session_state['sort_key_suffix'] += 1 # 強制リロードのためキーを更新
-
-        # 初回のみ、カスタムコンポーネントが空白になるのを防ぐため強制再描画
-        if st.session_state.get('sortable_needs_rerun'):
-            st.session_state['sortable_needs_rerun'] = False
-            st.rerun()
 
         st.markdown("<div style='font-size:14px; font-weight:600; margin-top:10px; margin-bottom:5px;'>② パネル配置の並び替え（ドラッグ＆ドロップで上下に移動）</div>", unsafe_allow_html=True)
         try:

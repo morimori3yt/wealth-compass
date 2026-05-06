@@ -4,3 +4,4 @@ plotly
 feedparser
 yfinance
 kaleido
+streamlit-sortables

@@ -237,15 +237,44 @@ with tabs[0]:
     with st.expander("⚙️ 表示設定（項目変更・カラーテーマ）", expanded=False):
         selected_assets_base = st.multiselect("① 表示項目の追加・削除", options=list(ASSET_MASTER.keys()), default=default_assets)
         
+        # 状態同期ロジック: 追加/削除とドラッグ順序の保持
+        if 'master_order' not in st.session_state:
+            st.session_state['master_order'] = default_assets.copy()
+            st.session_state['sort_key_suffix'] = 0
+            st.session_state['last_selected_set'] = set(default_assets)
+            
+        current_set = set(selected_assets_base)
+        last_set = st.session_state['last_selected_set']
+        
+        if current_set != last_set:
+            removed = last_set - current_set
+            added = current_set - last_set
+            # 削除された項目を除外（順序は維持）
+            new_order = [x for x in st.session_state['master_order'] if x not in removed]
+            # 新規項目を末尾に追加
+            for x in selected_assets_base:
+                if x in added and x not in new_order:
+                    new_order.append(x)
+                    
+            st.session_state['master_order'] = new_order
+            st.session_state['last_selected_set'] = current_set
+            st.session_state['sort_key_suffix'] += 1 # 強制リロードのためキーを更新
+
         st.markdown("<div style='font-size:14px; font-weight:600; margin-top:10px; margin-bottom:5px;'>② パネル配置の並び替え（ドラッグ＆ドロップで上下に移動）</div>", unsafe_allow_html=True)
         try:
             from streamlit_sortables import sort_items
-            sortable_data = [{'header': '以下の項目をドラッグして並び替えてください', 'items': selected_assets_base}]
-            sorted_res = sort_items(sortable_data, key="asset_sorter", multi_containers=True)
+            sortable_data = [{'header': '以下の項目をドラッグして並び替えてください', 'items': st.session_state['master_order']}]
+            
+            # アイテムが増減した時だけ初期化される動的キー
+            dyn_key = f"asset_sorter_{st.session_state['sort_key_suffix']}"
+            sorted_res = sort_items(sortable_data, key=dyn_key, multi_containers=True)
+            
             if sorted_res and len(sorted_res) > 0 and 'items' in sorted_res[0]:
                 ordered_assets = sorted_res[0]['items']
+                if ordered_assets != st.session_state['master_order']:
+                    st.session_state['master_order'] = ordered_assets # ドラッグ結果を保存
             else:
-                ordered_assets = selected_assets_base
+                ordered_assets = st.session_state['master_order']
         except Exception as e:
             ordered_assets = selected_assets_base
             

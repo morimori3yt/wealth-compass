@@ -685,7 +685,7 @@ with tabs[4]:
         }}, 1000);
     </script>
     """
-    components.html(counter_html, height=280)
+    components.html(counter_html, height=450)
     
     # 時給換算カード
     st.markdown("#### 💡 生活費との比較（あなたの不労所得で何が賄える？）")

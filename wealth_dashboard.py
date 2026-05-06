@@ -16,15 +16,14 @@ st.set_page_config(
     page_title="資産形成の羅針盤",
     page_icon="🧭",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed"
 )
 
 # --- セッション状態の初期化 ---
 if 'fire_age_val' not in st.session_state: st.session_state['fire_age_val'] = 50
 if 'rev_results' not in st.session_state: st.session_state['rev_results'] = None
 
-# --- マーケット設定 (サイドバー/設定用) ---
-st.sidebar.header("⚙️ 表示設定")
+# --- 資産マスターリスト ---
 
 # 1. 配置変更 (資産マスターリスト)
 ASSET_MASTER = {
@@ -50,55 +49,6 @@ default_assets = [
     "日経平均", "TOPIX", "NYダウ", "S&P 500", "ナスダック", "SOX指数", "ドル円", "ビットコイン",
     "NASDAQ 100", "FANG+", "VIX恐怖指数", "ユーロ円", "金先物", "WTI原油", "米10年債利回り", "上海総合"
 ]
-selected_assets = st.sidebar.multiselect("表示項目・順序の変更", options=list(ASSET_MASTER.keys()), default=default_assets)
-
-# 2. 色変更 (背景・テーマ)
-bg_mode = st.sidebar.radio("背景色設定", ["明るい (白)", "暗い (黒)"], horizontal=True)
-color_pattern = st.sidebar.radio("騰落カラー設定", ["日本式 (上昇:赤 / 下落:緑)", "欧米式 (上昇:緑 / 下落:赤)"], horizontal=True)
-
-# カラーコード定義
-is_dark = bg_mode == "暗い (黒)"
-theme_bg = "#121212" if is_dark else "#ffffff"
-theme_card = "#1e1e1e" if is_dark else "#f8f9fa"
-theme_text = "#ffffff" if is_dark else "#212529"
-theme_border = "#333333" if is_dark else "#e9ecef"
-
-# --- カスタムCSSインジェクション (世界の株価パクリ仕様: 余白ゼロ・高密度) ---
-st.markdown(f"""
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&family=Roboto+Mono:wght@500&display=swap');
-html, body, [class*="css"] {{ font-family: 'Noto Sans JP', sans-serif; }}
-
-/* Streamlitカラムの余白を極限まで削る */
-div[data-testid="column"] {{
-    padding: 2px !important;
-}}
-
-/* パネル自体のデザイン (世界の株価風・左右分割対応) */
-.m-tile {{
-    border: 1px solid {theme_border};
-    padding: 4px 6px 0px 6px;
-    border-radius: 2px;
-    margin-bottom: 2px;
-    transition: transform 0.1s;
-}}
-.m-tile:hover {{ transform: scale(1.02); z-index: 10; position: relative; border-color: #aaa; box-shadow: 0 0 10px rgba(0,0,0,0.3); }}
-
-/* 内部レイアウト (フレックスボックスによる左右分割) */
-.m-tile-inner {{
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    width: 100%;
-}}
-.m-tile-left {{ text-align: left; padding-top: 2px; }}
-.m-tile-right {{ text-align: right; }}
-
-.m-tile-name {{ font-size: 0.85rem; font-weight: 700; line-height: 1.1; margin-bottom: 0px; }}
-.m-tile-price {{ font-family: 'Roboto Mono', monospace; font-size: 1.25rem; font-weight: 700; line-height: 1.0; margin-bottom: 1px; }}
-.m-tile-diff {{ font-size: 0.8rem; font-weight: 700; line-height: 1.0; margin-bottom: 0px; }}
-</style>
-""", unsafe_allow_html=True)
 
 # --- 関数群 ---
 
@@ -284,6 +234,45 @@ tabs = st.tabs(["📊 マーケット状況", "📰 ニュース", "📅 カレ�
 
 # --- Tab 1: マーケット (世界の株価風・カスタマイズ版) ---
 with tabs[0]:
+    with st.expander("⚙️ 表示設定（項目変更・カラーテーマ）", expanded=False):
+        selected_assets = st.multiselect("表示項目・順序の変更", options=list(ASSET_MASTER.keys()), default=default_assets)
+        bg_mode = st.radio("背景色設定", ["明るい (白)", "暗い (黒)"], horizontal=True)
+        color_pattern = st.radio("騰落カラー設定", ["日本式 (上昇:赤 / 下落:緑)", "欧米式 (上昇:緑 / 下落:赤)"], horizontal=True)
+
+    # カラーコード定義
+    is_dark = bg_mode == "暗い (黒)"
+    theme_bg = "#121212" if is_dark else "#ffffff"
+    theme_card = "#1e1e1e" if is_dark else "#f8f9fa"
+    theme_text = "#ffffff" if is_dark else "#212529"
+    theme_border = "#333333" if is_dark else "#e9ecef"
+
+    # カスタムCSSインジェクション
+    st.markdown(f"""
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&family=Roboto+Mono:wght@500&display=swap');
+    html, body, [class*="css"] {{ font-family: 'Noto Sans JP', sans-serif; }}
+
+    div[data-testid="column"] {{ padding: 2px !important; }}
+
+    .m-tile {{
+        border: 1px solid {theme_border};
+        padding: 4px 6px 0px 6px;
+        border-radius: 2px;
+        margin-bottom: 2px;
+        transition: transform 0.1s;
+    }}
+    .m-tile:hover {{ transform: scale(1.02); z-index: 10; position: relative; border-color: #aaa; box-shadow: 0 0 10px rgba(0,0,0,0.3); }}
+
+    .m-tile-inner {{ display: flex; justify-content: space-between; align-items: center; width: 100%; }}
+    .m-tile-left {{ text-align: left; padding-top: 2px; }}
+    .m-tile-right {{ text-align: right; }}
+
+    .m-tile-name {{ font-size: 0.85rem; font-weight: 700; line-height: 1.1; margin-bottom: 0px; }}
+    .m-tile-price {{ font-family: 'Roboto Mono', monospace; font-size: 1.25rem; font-weight: 700; line-height: 1.0; margin-bottom: 1px; }}
+    .m-tile-diff {{ font-size: 0.8rem; font-weight: 700; line-height: 1.0; margin-bottom: 0px; }}
+    </style>
+    """, unsafe_allow_html=True)
+
     st.subheader("🌎 グローバル・マーケット・ボード")
     
     # グリッドレイアウト

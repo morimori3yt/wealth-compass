@@ -687,35 +687,47 @@ with tabs[4]:
     """
     components.html(counter_html, height=450)
     
-    # 時給換算カード
+    # 時給換算カード（CSS Grid: PC=3列/現在の配置, スマホ=1列/金額昇順）
     st.markdown("#### 💡 生活費との比較（あなたの不労所得で何が賄える？）")
     life_items = [
-        {"icon": "☕", "name": "コーヒー1杯", "cost": 500},
-        {"icon": "🍽️", "name": "外食ランチ", "cost": 1000},
-        {"icon": "📱", "name": "スマホ代 (月)", "cost": 8000},
-        {"icon": "💡", "name": "電気代 (月)", "cost": 12000},
-        {"icon": "🏠", "name": "家賃 (月)", "cost": 150000},
-        {"icon": "✈️", "name": "海外旅行", "cost": 400000},
+        {"icon": "☕", "name": "コーヒー1杯", "cost": 500, "mobile_order": 1},
+        {"icon": "🍽️", "name": "外食ランチ", "cost": 1000, "mobile_order": 2},
+        {"icon": "📱", "name": "スマホ代 (月)", "cost": 8000, "mobile_order": 3},
+        {"icon": "💡", "name": "電気代 (月)", "cost": 12000, "mobile_order": 4},
+        {"icon": "🏠", "name": "家賃 (月)", "cost": 150000, "mobile_order": 5},
+        {"icon": "✈️", "name": "海外旅行", "cost": 400000, "mobile_order": 6},
     ]
-    li_cols = st.columns(3)
+    # 各カードの時間計算
+    cards_html = ""
     for idx, item in enumerate(life_items):
-        with li_cols[idx % 3]:
-            if daily_income_yen > 0:
-                hours_needed = item["cost"] / (hourly_income * 10000)
-                if hours_needed < 1:
-                    time_str = f"{hours_needed * 60:.0f}分"
-                elif hours_needed < 24:
-                    time_str = f"{hours_needed:.1f}時間"
-                else:
-                    time_str = f"{hours_needed / 24:.1f}日"
+        if daily_income_yen > 0:
+            hours_needed = item["cost"] / (hourly_income * 10000)
+            if hours_needed < 1:
+                time_str = f"{hours_needed * 60:.0f}分"
+            elif hours_needed < 24:
+                time_str = f"{hours_needed:.1f}時間"
             else:
-                time_str = "∞"
-            st.markdown(f'''<div class="fire-report-card fire-report-normal" style="margin-bottom:10px;">
-                <div style="font-size:1.5rem;">{item["icon"]}</div>
-                <div class="fire-report-title" style="color:#1E293B;">{item["name"]}</div>
-                <div style="color:#64748B; font-size:0.82rem;">¥{item["cost"]:,}</div>
-                <div class="fire-report-status" style="color:#3B82F6; margin-top:4px;">不労所得で{time_str}</div>
-            </div>''', unsafe_allow_html=True)
+                time_str = f"{hours_needed / 24:.1f}日"
+        else:
+            time_str = "∞"
+        cards_html += f'''<div class="li-card" style="order:{item['mobile_order']};">
+            <div style="font-size:1.5rem;">{item["icon"]}</div>
+            <div style="font-weight:700; font-size:1.0rem; color:#1E293B; margin-bottom:2px;">{item["name"]}</div>
+            <div style="color:#64748B; font-size:0.82rem;">¥{item["cost"]:,}</div>
+            <div style="font-weight:700; font-size:0.95rem; color:#3B82F6; margin-top:4px;">不労所得で{time_str}</div>
+        </div>'''
+    
+    st.markdown(f'''<style>
+        .li-grid {{ display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }}
+        .li-card {{ background: #F0F9FF; border: 1px solid #E2E8F0; border-radius: 12px; padding: 16px; text-align: center;
+                    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); transition: all 0.2s ease; position: relative; overflow: hidden; }}
+        .li-card:hover {{ transform: translateY(-2px); box-shadow: 0 8px 15px rgba(0,0,0,0.1); }}
+        .li-card::before {{ content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, #3B82F6, #60A5FA); }}
+        @media (max-width: 768px) {{
+            .li-grid {{ grid-template-columns: 1fr; }}
+        }}
+    </style>
+    <div class="li-grid">{cards_html}</div>''', unsafe_allow_html=True)
 
 # --- Tab 6: 日本版 恐怖＆強欲メーター (CNN Fear & Greed Index 準拠) ---
 with tabs[5]:

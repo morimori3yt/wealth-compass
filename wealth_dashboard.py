@@ -695,7 +695,7 @@ with tabs[4]:
         {"icon": "📱", "name": "スマホ代 (月)", "cost": 8000, "mobile_order": 3},
         {"icon": "💡", "name": "電気代 (月)", "cost": 12000, "mobile_order": 4},
         {"icon": "🏠", "name": "家賃 (月)", "cost": 150000, "mobile_order": 5},
-        {"icon": "✈️", "name": "海外旅行", "cost": 400000, "mobile_order": 6},
+        {"icon": "✈️", "name": "海外旅行", "cost": 500000, "mobile_order": 6},
     ]
     cards_html = ""
     for item in life_items:
@@ -732,7 +732,7 @@ with tabs[4]:
     <div class="li-grid">{cards_html}</div>
     </body></html>
     """
-    components.html(life_grid_html, height=700)
+    components.html(life_grid_html, height=950)
 
 # --- Tab 6: 日本版 恐怖＆強欲メーター (CNN Fear & Greed Index 準拠) ---
 with tabs[5]:

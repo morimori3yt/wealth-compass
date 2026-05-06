@@ -715,68 +715,90 @@ with tabs[4]:
                 <div class="fire-report-status" style="color:#3B82F6; margin-top:4px;">不労所得で{time_str}</div>
             </div>''', unsafe_allow_html=True)
 
-# --- Tab 6: 日本版 恐怖＆強欲メーター ---
+# --- Tab 6: 日本版 恐怖＆強欲メーター (CNN Fear & Greed Index 準拠) ---
 with tabs[5]:
     st.subheader("🎰 日本版 恐怖＆強欲メーター")
-    st.caption("5つの市場指標を統合し、現在の投資家心理を0（極度の恐怖）〜100（極度の強欲）で評価します。")
+    st.caption("CNN Fear & Greed Index に準拠した7つの市場指標を均等加重（各1/7）で統合し、投資家心理を0〜100で評価します。")
     
     @st.cache_data(ttl=600)
     def calc_fear_greed():
-        import numpy as np
+        w = 1.0 / 7.0  # CNN準拠: 均等加重
         scores = {}
         
-        # ① VIX（米国恐怖指数）
+        # ① 株価モメンタム: 日経平均 vs 125日移動平均 (CNN: S&P500 vs 125-day MA)
         try:
-            vix = yf.Ticker("^VIX").history(period="5d")
-            vix_val = vix['Close'].iloc[-1]
-            scores['VIX'] = {'value': round(vix_val, 2), 'score': max(0, min(100, 100 - (vix_val - 12) * (100 / 28))), 'weight': 0.25}
-        except:
-            scores['VIX'] = {'value': None, 'score': 50, 'weight': 0.25}
-        
-        # ② 日経平均 vs 50日移動平均
-        try:
-            nk = yf.Ticker("^N225").history(period="80d")
-            ma50 = nk['Close'].rolling(50).mean().iloc[-1]
+            nk = yf.Ticker("^N225").history(period="160d")
+            ma125 = nk['Close'].rolling(125).mean().iloc[-1]
             curr = nk['Close'].iloc[-1]
-            pct_above = ((curr - ma50) / ma50) * 100
-            scores['MA50'] = {'value': round(pct_above, 2), 'score': max(0, min(100, 50 + pct_above * 5)), 'weight': 0.25}
+            pct_above = ((curr - ma125) / ma125) * 100
+            scores['MOMENTUM'] = {'value': f"{pct_above:+.2f}%", 'score': max(0, min(100, 50 + pct_above * 4)), 'weight': w}
         except:
-            scores['MA50'] = {'value': None, 'score': 50, 'weight': 0.25}
+            scores['MOMENTUM'] = {'value': 'N/A', 'score': 50, 'weight': w}
         
-        # ③ 日経平均 vs 200日移動平均
+        # ② 株価の強さ: 大型株 vs 小型株の相対パフォーマンス20日 (CNN: 52週新高値/新安値比率の代替)
         try:
-            nk_long = yf.Ticker("^N225").history(period="250d")
-            ma200 = nk_long['Close'].rolling(200).mean().iloc[-1]
-            curr_l = nk_long['Close'].iloc[-1]
-            pct200 = ((curr_l - ma200) / ma200) * 100
-            scores['MA200'] = {'value': round(pct200, 2), 'score': max(0, min(100, 50 + pct200 * 3)), 'weight': 0.20}
+            topix = yf.Ticker("1306.T").history(period="30d")
+            mothers = yf.Ticker("2516.T").history(period="30d")
+            topix_ret = (topix['Close'].iloc[-1] / topix['Close'].iloc[-20] - 1) * 100
+            mothers_ret = (mothers['Close'].iloc[-1] / mothers['Close'].iloc[-20] - 1) * 100
+            breadth = topix_ret - mothers_ret
+            scores['STRENGTH'] = {'value': f"{breadth:+.2f}%", 'score': max(0, min(100, 50 + breadth * 5)), 'weight': w}
         except:
-            scores['MA200'] = {'value': None, 'score': 50, 'weight': 0.20}
+            scores['STRENGTH'] = {'value': 'N/A', 'score': 50, 'weight': w}
         
-        # ④ RSI (14日)
+        # ③ 市場の広がり: 日経ETF出来高 vs 50日平均出来高 (CNN: McClellan Volume代替)
         try:
-            nk_rsi = yf.Ticker("^N225").history(period="30d")
-            delta = nk_rsi['Close'].diff()
-            gain = delta.where(delta > 0, 0).rolling(14).mean()
-            loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
-            rs = gain / loss
-            rsi_val = (100 - (100 / (1 + rs))).iloc[-1]
-            scores['RSI'] = {'value': round(rsi_val, 1), 'score': rsi_val, 'weight': 0.15}
+            nk_vol = yf.Ticker("1321.T").history(period="70d")
+            avg_vol = nk_vol['Volume'].rolling(50).mean().iloc[-1]
+            curr_vol = nk_vol['Volume'].iloc[-5:].mean()
+            vol_ratio = (curr_vol / avg_vol - 1) * 100 if avg_vol > 0 else 0
+            scores['BREADTH'] = {'value': f"{vol_ratio:+.1f}%", 'score': max(0, min(100, 50 + vol_ratio * 0.5)), 'weight': w}
         except:
-            scores['RSI'] = {'value': None, 'score': 50, 'weight': 0.15}
+            scores['BREADTH'] = {'value': 'N/A', 'score': 50, 'weight': w}
         
-        # ⑤ 安全資産への逃避（金 vs 日経 20日リターン比較）
+        # ④ プット/コール比率代替: VIX短期トレンド 5日MA vs 20日MA (CNN: Put/Call Ratio代替)
         try:
-            gold = yf.Ticker("GC=F").history(period="30d")
-            nk_g = yf.Ticker("^N225").history(period="30d")
-            gold_ret = (gold['Close'].iloc[-1] / gold['Close'].iloc[-20] - 1) * 100
-            nk_ret = (nk_g['Close'].iloc[-1] / nk_g['Close'].iloc[-20] - 1) * 100
-            spread = nk_ret - gold_ret  # 株が勝っていればプラス（強欲）
-            scores['SAFE'] = {'value': round(spread, 2), 'score': max(0, min(100, 50 + spread * 5)), 'weight': 0.15}
+            vix_pc = yf.Ticker("^VIX").history(period="30d")
+            vix_ma5 = vix_pc['Close'].rolling(5).mean().iloc[-1]
+            vix_ma20 = vix_pc['Close'].rolling(20).mean().iloc[-1]
+            vix_trend = ((vix_ma5 - vix_ma20) / vix_ma20) * 100
+            scores['PUTCALL'] = {'value': f"{vix_trend:+.2f}%", 'score': max(0, min(100, 50 - vix_trend * 3)), 'weight': w}
         except:
-            scores['SAFE'] = {'value': None, 'score': 50, 'weight': 0.15}
+            scores['PUTCALL'] = {'value': 'N/A', 'score': 50, 'weight': w}
         
-        # 加重平均スコア
+        # ⑤ 市場のボラティリティ: VIX vs 50日移動平均 (CNN: VIX vs 50-day MA)
+        try:
+            vix_data = yf.Ticker("^VIX").history(period="70d")
+            vix_curr = vix_data['Close'].iloc[-1]
+            vix_ma50 = vix_data['Close'].rolling(50).mean().iloc[-1]
+            vix_diff = ((vix_curr - vix_ma50) / vix_ma50) * 100
+            scores['VOLATILITY'] = {'value': f"VIX {vix_curr:.1f}", 'score': max(0, min(100, 50 - vix_diff * 2)), 'weight': w}
+        except:
+            scores['VOLATILITY'] = {'value': 'N/A', 'score': 50, 'weight': w}
+        
+        # ⑥ 安全資産への逃避: 株式 vs 債券の20日リターン比較 (CNN: Stock vs Bond returns)
+        try:
+            stk = yf.Ticker("^N225").history(period="30d")
+            bnd = yf.Ticker("TLT").history(period="30d")
+            stk_ret = (stk['Close'].iloc[-1] / stk['Close'].iloc[-20] - 1) * 100
+            bnd_ret = (bnd['Close'].iloc[-1] / bnd['Close'].iloc[-20] - 1) * 100
+            spread = stk_ret - bnd_ret
+            scores['SAFEHAVEN'] = {'value': f"{spread:+.2f}%", 'score': max(0, min(100, 50 + spread * 4)), 'weight': w}
+        except:
+            scores['SAFEHAVEN'] = {'value': 'N/A', 'score': 50, 'weight': w}
+        
+        # ⑦ ジャンク債需要: HYG vs LQD の20日リターン比較 (CNN: Junk Bond Demand)
+        try:
+            hyg = yf.Ticker("HYG").history(period="30d")
+            lqd = yf.Ticker("LQD").history(period="30d")
+            hyg_ret = (hyg['Close'].iloc[-1] / hyg['Close'].iloc[-20] - 1) * 100
+            lqd_ret = (lqd['Close'].iloc[-1] / lqd['Close'].iloc[-20] - 1) * 100
+            junk_spread = hyg_ret - lqd_ret
+            scores['JUNKBOND'] = {'value': f"{junk_spread:+.2f}%", 'score': max(0, min(100, 50 + junk_spread * 10)), 'weight': w}
+        except:
+            scores['JUNKBOND'] = {'value': 'N/A', 'score': 50, 'weight': w}
+        
+        # 均等加重平均スコア
         total_score = sum(s['score'] * s['weight'] for s in scores.values())
         return round(total_score, 1), scores
     
@@ -813,21 +835,30 @@ with tabs[5]:
     st.plotly_chart(fig_fg, use_container_width=True)
     st.markdown(f'<div style="text-align:center; font-size:1.5rem; font-weight:700; color:{fg_color}; margin-top:-10px;">{fg_emoji} {fg_label}</div>', unsafe_allow_html=True)
     
-    # 構成指標ミニカード
-    st.markdown("#### 📊 構成指標の内訳")
-    indicator_names = {'VIX': 'VIX恐怖指数', 'MA50': '日経 vs 50日MA', 'MA200': '日経 vs 200日MA', 'RSI': 'RSI (14日)', 'SAFE': '金 vs 株 (20日)'}
-    indicator_desc = {'VIX': '低い=楽観 / 高い=恐怖', 'MA50': 'MA上=強気 / MA下=弱気', 'MA200': '長期トレンド判定', 'RSI': '70超=買われすぎ / 30未満=売られすぎ', 'SAFE': '株優勢=強欲 / 金優勢=恐怖'}
-    fg_cols = st.columns(5)
-    for idx, (key, data) in enumerate(fg_details.items()):
-        with fg_cols[idx]:
+    # 構成指標ミニカード（7指標・CNN準拠）
+    st.markdown("#### 📊 構成指標の内訳（CNN準拠・各 14.3% の均等加重）")
+    indicator_names = {
+        'MOMENTUM': '① 株価モメンタム', 'STRENGTH': '② 株価の強さ', 'BREADTH': '③ 市場の広がり',
+        'PUTCALL': '④ P/C比率代替', 'VOLATILITY': '⑤ ボラティリティ', 'SAFEHAVEN': '⑥ 安全資産逃避', 'JUNKBOND': '⑦ ジャンク債需要'
+    }
+    indicator_desc = {
+        'MOMENTUM': '日経 vs 125日MA', 'STRENGTH': '大型株 vs 小型株', 'BREADTH': '出来高 vs 50日平均',
+        'PUTCALL': 'VIX 5日MA vs 20日MA', 'VOLATILITY': 'VIX vs 50日MA', 'SAFEHAVEN': '株式 vs 債券リターン', 'JUNKBOND': 'HYG vs LQD リターン'
+    }
+    fg_cols_top = st.columns(4)
+    fg_cols_bot = st.columns([1,1,1,1])
+    fg_keys = list(fg_details.keys())
+    for idx, key in enumerate(fg_keys):
+        data = fg_details[key]
+        col = fg_cols_top[idx] if idx < 4 else fg_cols_bot[idx - 4]
+        with col:
             sc = data['score']
             sc_color = "#EF4444" if sc < 40 else ("#10B981" if sc > 60 else "#64748B")
-            val_str = str(data['value']) if data['value'] is not None else "N/A"
-            st.markdown(f'''<div class="fire-report-card fire-report-normal" style="padding:12px;">
-                <div style="font-size:0.78rem; font-weight:700; color:#1E293B; margin-bottom:4px;">{indicator_names[key]}</div>
+            st.markdown(f'''<div class="fire-report-card fire-report-normal" style="padding:12px; margin-bottom:8px;">
+                <div style="font-size:0.75rem; font-weight:700; color:#1E293B; margin-bottom:4px;">{indicator_names[key]}</div>
                 <div style="font-size:1.3rem; font-weight:700; color:{sc_color};">{sc:.0f}</div>
-                <div style="font-size:0.7rem; color:#64748B;">{val_str}</div>
-                <div style="font-size:0.65rem; color:#94A3B8; margin-top:2px;">{indicator_desc[key]}</div>
+                <div style="font-size:0.7rem; color:#64748B;">{data["value"]}</div>
+                <div style="font-size:0.62rem; color:#94A3B8; margin-top:2px;">{indicator_desc[key]}</div>
             </div>''', unsafe_allow_html=True)
 
 # --- Tab 7: 暴落プレイバック ストレステスト ---

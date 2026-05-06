@@ -687,7 +687,7 @@ with tabs[4]:
     """
     components.html(counter_html, height=450)
     
-    # 時給換算カード（CSS Grid: PC=3列/現在の配置, スマホ=1列/金額昇順）
+    # 時給換算カード（components.htmlでCSS Grid描画: PC=3列, スマホ=1列/金額昇順）
     st.markdown("#### 💡 生活費との比較（あなたの不労所得で何が賄える？）")
     life_items = [
         {"icon": "☕", "name": "コーヒー1杯", "cost": 500, "mobile_order": 1},
@@ -697,9 +697,8 @@ with tabs[4]:
         {"icon": "🏠", "name": "家賃 (月)", "cost": 150000, "mobile_order": 5},
         {"icon": "✈️", "name": "海外旅行", "cost": 400000, "mobile_order": 6},
     ]
-    # 各カードの時間計算
     cards_html = ""
-    for idx, item in enumerate(life_items):
+    for item in life_items:
         if daily_income_yen > 0:
             hours_needed = item["cost"] / (hourly_income * 10000)
             if hours_needed < 1:
@@ -717,8 +716,11 @@ with tabs[4]:
             <div style="font-weight:700; font-size:0.95rem; color:#3B82F6; margin-top:4px;">不労所得で{time_str}</div>
         </div>'''
     
-    st.markdown(f'''<style>
-        .li-grid {{ display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }}
+    life_grid_html = f"""
+    <html><head><style>
+        * {{ margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', 'Noto Sans JP', sans-serif; }}
+        body {{ background: transparent; }}
+        .li-grid {{ display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 4px; }}
         .li-card {{ background: #F0F9FF; border: 1px solid #E2E8F0; border-radius: 12px; padding: 16px; text-align: center;
                     box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); transition: all 0.2s ease; position: relative; overflow: hidden; }}
         .li-card:hover {{ transform: translateY(-2px); box-shadow: 0 8px 15px rgba(0,0,0,0.1); }}
@@ -726,8 +728,11 @@ with tabs[4]:
         @media (max-width: 768px) {{
             .li-grid {{ grid-template-columns: 1fr; }}
         }}
-    </style>
-    <div class="li-grid">{cards_html}</div>''', unsafe_allow_html=True)
+    </style></head><body>
+    <div class="li-grid">{cards_html}</div>
+    </body></html>
+    """
+    components.html(life_grid_html, height=260)
 
 # --- Tab 6: 日本版 恐怖＆強欲メーター (CNN Fear & Greed Index 準拠) ---
 with tabs[5]:

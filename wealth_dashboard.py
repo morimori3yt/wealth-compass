@@ -732,7 +732,7 @@ with tabs[4]:
     <div class="li-grid">{cards_html}</div>
     </body></html>
     """
-    components.html(life_grid_html, height=260)
+    components.html(life_grid_html, height=700)
 
 # --- Tab 6: 日本版 恐怖＆強欲メーター (CNN Fear & Greed Index 準拠) ---
 with tabs[5]:

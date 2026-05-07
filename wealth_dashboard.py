@@ -260,7 +260,7 @@ st.markdown("""
     <div style="text-align:center; margin:10px 0;"><a href="https://rpx.a8.net/svt/ejp?a8mat=4B3GYD+C0U5KI+2HOM+69P01&rakuten=y&a8ejpredirect=http%3A%2F%2Fhb.afl.rakuten.co.jp%2Fhgc%2F0ea62065.34400275.0ea62066.204f04c0%2Fa26050208529_4B3GYD_C0U5KI_2HOM_69P01%3Fpc%3Dhttp%253A%252F%252Fwww.rakuten.co.jp%252F%26m%3Dhttp%253A%252F%252Fm.rakuten.co.jp%252F" rel="nofollow"><img src="https://hbb.afl.rakuten.co.jp/hsb/0eb4bbc7.e9e6f789.0eb4bbaa.95151395/" border="0"></a></div>
     """, unsafe_allow_html=True)
 
-tabs = st.tabs(["📊 マーケット状況", "📰 ニュース", "📅 カレンダー", "🚀 FIREシミュレーター", "⏱️ 不労所得", "🎰 センチメント", "🌊 暴落テスト"])
+tabs = st.tabs(["📊 マーケット状況", "📰 ニュース", "🎰 センチメント", "📅 カレンダー", "⏱️ 不労所得", "🚀 FIREシミュレーター", "🌊 暴落テスト"])
 
 # --- Tab 1: マーケット (世界の株価風・カスタマイズ版) ---
 with tabs[0]:
@@ -581,8 +581,8 @@ with tabs[1]:
                 st.markdown(f'<div class="news-card"><a href="{n.link}" target="_blank">{n.title}</a><div class="news-meta"><span class="news-time-badge">⏱ {n.rel_time}</span><span class="news-source">{source_name}</span></div></div>', unsafe_allow_html=True)
         else: st.info("現在、表示できる最新ニュースはありません。")
 
-# --- Tab 3: カレンダー ---
-with tabs[2]:
+# --- Tab 4: カレンダー ---
+with tabs[3]:
     st.subheader("📅 経済指標カレンダー")
     st.markdown("""
     <div class="guide-box">
@@ -615,8 +615,8 @@ with tabs[2]:
     """
     components.html(tv_widget_html, height=820, scrolling=True)
 
-# --- Tab 4: FIREシミュレーター ---
-with tabs[3]:
+# --- Tab 6: FIREシミュレーター ---
+with tabs[5]:
     f_in, f_out = st.columns([1, 2])
     with f_in:
         st.subheader("条件設定")
@@ -763,8 +763,8 @@ with tabs[4]:
     """
     components.html(life_grid_html, height=950)
 
-# --- Tab 6: 日本版 恐怖＆強欲メーター (CNN Fear & Greed Index 準拠) ---
-with tabs[5]:
+# --- Tab 3: 日本版 恐怖＆強欲メーター (CNN Fear & Greed Index 準拠) ---
+with tabs[2]:
     st.subheader("🎰 日本版 恐怖＆強欲メーター")
     st.caption("CNN Fear & Greed Index に準拠した7つの市場指標を均等加重（各1/7）で統合し、投資家心理を0〜100で評価します。")
     

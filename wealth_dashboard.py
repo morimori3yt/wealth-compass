@@ -765,7 +765,7 @@ with tabs[4]:
 
 # --- Tab 3: 日本版 恐怖＆強欲メーター (CNN Fear & Greed Index 準拠) ---
 with tabs[2]:
-    st.subheader("🎰 日本版 恐怖＆強欲メーター")
+    st.subheader("🎰 日本版 Fear & Greed Index")
     st.caption("CNN Fear & Greed Index に準拠した7つの市場指標を均等加重（各1/7）で統合し、投資家心理を0〜100で評価します。")
     
     @st.cache_data(ttl=600)

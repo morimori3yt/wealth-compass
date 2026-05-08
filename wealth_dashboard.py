@@ -228,10 +228,26 @@ def fetch_latest_news(region):
     return final[:10]
 
 # --- アプリメイン ---
-st.markdown("""
+# 広告リストの読み込み
+def get_random_ad():
+    # デフォルト広告（生コードのみ）
+    default_ad = "<a href='https://rpx.a8.net/svt/ejp?a8mat=4B3GYD+C0U5KI+2HOM+69P01&rakuten=y&a8ejpredirect=http%3A%2F%2Fhb.afl.rakuten.co.jp%2Fhgc%2F0ea62065.34400275.0ea62066.204f04c0%2Fa26050208529_4B3GYD_C0U5KI_2HOM_69P01%3Fpc%3Dhttp%253A%252F%252Fwww.rakuten.co.jp%252F%26m%3Dhttp%253A%252F%252Fm.rakuten.co.jp%252F' rel='nofollow'><img src='https://hbb.afl.rakuten.co.jp/hsb/0eb4bbc7.e9e6f789.0eb4bbaa.95151395/' border='0'></a>"
+    try:
+        import random
+        df_ads = pd.read_csv('ads_list.csv')
+        if not df_ads.empty and 'html' in df_ads.columns:
+            raw_html = random.choice(df_ads['html'].dropna().values)
+            return raw_html
+        return default_ad
+    except:
+        return default_ad
+
+selected_ad_raw = get_random_ad()
+
+st.markdown(f"""
     <style>
     /* タイトルのレスポンシブ調整 */
-    .main-title {
+    .main-title {{
         font-size: clamp(1.5rem, 6.5vw, 2.8rem);
         font-weight: 800;
         text-align: center;
@@ -239,25 +255,25 @@ st.markdown("""
         color: #1E293B;
         white-space: nowrap;
         font-family: 'Inter', 'Noto Sans JP', sans-serif;
-    }
-    .ad-disclosure {
+    }}
+    .ad-disclosure {{
         font-size: 0.75rem;
         color: #64748B;
         text-align: center;
         margin-bottom: 1.0rem;
         font-family: 'Inter', 'Noto Sans JP', sans-serif;
-    }
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    header {visibility: hidden;}
-    .stAppDeployButton {display:none;}
-    div.stToolbar {display:none;}
-    div[data-testid="stStatusWidget"] {display:none;}
-    #viewer-link {display:none;}
+    }}
+    #MainMenu {{visibility: hidden;}}
+    footer {{visibility: hidden;}}
+    header {{visibility: hidden;}}
+    .stAppDeployButton {{display:none;}}
+    div.stToolbar {{display:none;}}
+    div[data-testid="stStatusWidget"] {{display:none;}}
+    #viewer-link {{display:none;}}
     </style>
     <div class="main-title">🧭 資産形成の羅針盤</div>
     <div class="ad-disclosure">※本ページはプロモーション（アフィリエイト広告）が含まれています</div>
-    <div style="text-align:center; margin:10px 0;"><a href="https://rpx.a8.net/svt/ejp?a8mat=4B3GYD+C0U5KI+2HOM+69P01&rakuten=y&a8ejpredirect=http%3A%2F%2Fhb.afl.rakuten.co.jp%2Fhgc%2F0ea62065.34400275.0ea62066.204f04c0%2Fa26050208529_4B3GYD_C0U5KI_2HOM_69P01%3Fpc%3Dhttp%253A%252F%252Fwww.rakuten.co.jp%252F%26m%3Dhttp%253A%252F%252Fm.rakuten.co.jp%252F" rel="nofollow"><img src="https://hbb.afl.rakuten.co.jp/hsb/0eb4bbc7.e9e6f789.0eb4bbaa.95151395/" border="0"></a></div>
+    <div style="text-align:center; margin:10px 0;">{selected_ad_raw}</div>
     """, unsafe_allow_html=True)
 
 tabs = st.tabs(["📊 マーケット状況", "📰 ニュース", "🎰 センチメント", "📅 カレンダー", "⏱️ 不労所得", "🚀 FIREシミュレーター", "🌊 暴落テスト"])

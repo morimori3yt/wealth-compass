@@ -293,8 +293,8 @@ def render_rotating_ads():
         // 初回表示
         changeAd();
         
-        // 5秒ごとに自動切り替え
-        setInterval(changeAd, 5000);
+        // 10秒ごとに自動切り替え
+        setInterval(changeAd, 10000);
         
         // 親画面の操作（タブクリックなど）を検知して即座に切り替える
         try {{

@@ -323,7 +323,7 @@ def render_rotating_ads():
         <div class="ad-disclosure">※本ページはプロモーション（アフィリエイト広告）が含まれています</div>
         """, unsafe_allow_html=True)
     
-    components.html(ad_html, height=700)
+    components.html(ad_html, height=120)
 
 render_rotating_ads()
 

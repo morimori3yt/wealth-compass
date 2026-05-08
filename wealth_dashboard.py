@@ -249,24 +249,29 @@ def render_rotating_ads():
         let currentIndex = -1;
         
         function changeAd() {{
-            if (ads.length <= 1) {{
-                if (currentIndex === -1) {{
-                    container.innerHTML = ads[0];
-                    currentIndex = 0;
-                }}
-                return;
-            }}
+            if (ads.length <= 0) return;
             
             container.style.opacity = 0;
             setTimeout(() => {{
-                // 必ず前回とは違う広告を選ぶ
                 let nextIndex;
-                do {{
-                    nextIndex = Math.floor(Math.random() * ads.length);
-                }} while (nextIndex === currentIndex);
+                if (ads.length > 1) {{
+                    do {{
+                        nextIndex = Math.floor(Math.random() * ads.length);
+                    }} while (nextIndex === currentIndex);
+                }} else {{
+                    nextIndex = 0;
+                }}
                 
                 currentIndex = nextIndex;
                 container.innerHTML = ads[currentIndex];
+                
+                // すべてのリンクを強制的に新しいタブで開くように設定
+                const links = container.getElementsByTagName('a');
+                for (let link of links) {{
+                    link.target = "_blank";
+                    link.rel = "noopener noreferrer";
+                }}
+                
                 container.style.opacity = 1;
             }}, 300);
         }}
@@ -318,7 +323,7 @@ def render_rotating_ads():
         <div class="ad-disclosure">※本ページはプロモーション（アフィリエイト広告）が含まれています</div>
         """, unsafe_allow_html=True)
     
-    components.html(ad_html, height=100)
+    components.html(ad_html, height=700)
 
 render_rotating_ads()
 

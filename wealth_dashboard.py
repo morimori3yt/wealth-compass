@@ -242,24 +242,49 @@ def render_rotating_ads():
     ads_json = json.dumps(ad_list)
     
     ad_html = f"""
-    <div id="ad-container" style="text-align:center; transition: opacity 0.5s ease-in-out;"></div>
+    <div id="ad-container" style="text-align:center; transition: opacity 0.3s ease-in-out; cursor: pointer;"></div>
     <script>
         const ads = {ads_json};
         const container = document.getElementById('ad-container');
+        let currentIndex = -1;
         
         function changeAd() {{
+            if (ads.length <= 1) {{
+                if (currentIndex === -1) {{
+                    container.innerHTML = ads[0];
+                    currentIndex = 0;
+                }}
+                return;
+            }}
+            
             container.style.opacity = 0;
             setTimeout(() => {{
-                const randomAd = ads[Math.floor(Math.random() * ads.length)];
-                container.innerHTML = randomAd;
+                // 必ず前回とは違う広告を選ぶ
+                let nextIndex;
+                do {{
+                    nextIndex = Math.floor(Math.random() * ads.length);
+                }} while (nextIndex === currentIndex);
+                
+                currentIndex = nextIndex;
+                container.innerHTML = ads[currentIndex];
                 container.style.opacity = 1;
-            }}, 500);
+            }}, 300);
         }}
         
         // 初回表示
         changeAd();
-        // 5秒ごとに切り替え
+        
+        // 5秒ごとに自動切り替え
         setInterval(changeAd, 5000);
+        
+        // 親画面の操作（タブクリックなど）を検知して即座に切り替える
+        try {{
+            window.parent.document.addEventListener('click', function(e) {{
+                setTimeout(changeAd, 100);
+            }}, true);
+        }} catch (e) {{
+            // クロスドメイン制限がある場合でもタイマーは動作し続ける
+        }}
     </script>
     """
     

@@ -242,7 +242,21 @@ def render_rotating_ads():
     ads_json = json.dumps(ad_list)
     
     ad_html = f"""
-    <div id="ad-container" style="text-align:center; transition: opacity 0.3s ease-in-out; cursor: pointer;"></div>
+    <style>
+        #ad-container {{
+            text-align: center;
+            transition: opacity 0.3s ease-in-out;
+            cursor: pointer;
+            width: 100%;
+            overflow: hidden;
+        }}
+        /* 広告内の画像やリンクを強制的に画面幅に収める */
+        #ad-container img, #ad-container a, #ad-container div {{
+            max-width: 100% !important;
+            height: auto !important;
+        }}
+    </style>
+    <div id="ad-container"></div>
     <script>
         const ads = {ads_json};
         const container = document.getElementById('ad-container');

@@ -258,8 +258,8 @@ def render_rotating_ads():
         
         // 初回表示
         changeAd();
-        // 10秒ごとに切り替え
-        setInterval(changeAd, 10000);
+        // 5秒ごとに切り替え
+        setInterval(changeAd, 5000);
     </script>
     """
     

@@ -1156,7 +1156,7 @@ def render_footer_ad():
     # 広告リストをすべて読み込む
     import json
     try:
-        df_ads = pd.read_csv('overlay_ads_list.csv')
+        df_ads = pd.read_csv('ads_list.csv')
         ads_json = json.dumps(df_ads['html'].dropna().tolist())
     except:
         ads_json = json.dumps(['<div style="color:#64748B; font-size:12px;">Wealth Compass Ad</div>'])

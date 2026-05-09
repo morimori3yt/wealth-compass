@@ -1178,7 +1178,7 @@ def render_footer_ad():
     footer_html = f"""
     <div id="footer-ad-root" style="
         position: fixed;
-        bottom: 25px;
+        bottom: 0; /* 0に修正（外側のiframeで浮かせるため） */
         left: 0;
         width: 100%;
         background: rgba(255, 255, 255, 0.95);

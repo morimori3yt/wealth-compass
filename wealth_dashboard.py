@@ -830,13 +830,13 @@ with tabs[4]:
         }}, 1000);
     </script>
     """
-    components.html(counter_html, height=350)
+    components.html(counter_html, height=280)
     
     # シェアボタンをメーター直下に配置
     st.markdown(get_share_button_html(f"【不労所得メーター】💰 私の資産は1日に「{daily_income_yen:,.0f}円」、1年で「{annual_income_yen:,.0f}円」稼いでいます！ 🗓️✨ #配当金 #資産形成の羅針盤"), unsafe_allow_html=True)
     
     # 時給換算カード（components.htmlでCSS Grid描画: PC=3列, スマホ=1列/金額昇順）
-    st.markdown("#### 💡 生活費との比較（あなたの不労所得で何が賄える？）")
+    st.markdown('<h4 style="margin-bottom: -15px;">💡 生活費との比較（あなたの不労所得で何が賄える？）</h4>', unsafe_allow_html=True)
     life_items = [
         {"icon": "☕", "name": "コーヒー1杯", "cost": 500, "mobile_order": 1},
         {"icon": "🍽️", "name": "外食ランチ", "cost": 1000, "mobile_order": 2},

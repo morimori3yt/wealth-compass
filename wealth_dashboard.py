@@ -1165,12 +1165,12 @@ def render_footer_ad():
     st.markdown("""
         <style>
         /* PC用（デフォルト） */
-        .stApp { margin-bottom: 155px; }
+        .stApp {{ margin-bottom: 180px; }}
         
         /* スマホ用（幅768px未満） */
-        @media (max-width: 768px) {
-            .stApp {{ margin-bottom: 90px; }}
-        }
+        @media (max-width: 768px) {{
+            .stApp {{ margin-bottom: 115px; }}
+        }}
         </style>
     """, unsafe_allow_html=True)
 
@@ -1246,7 +1246,7 @@ def render_footer_ad():
                         const isMobile = window.innerWidth < 768;
                         const h = isMobile ? 60 : 125;
                         frame.style.position = 'fixed';
-                        frame.style.bottom = '25px'; 
+                        frame.style.bottom = '50px'; 
                         frame.style.left = '0';
                         frame.style.width = '100%';
                         frame.style.height = h + 'px';

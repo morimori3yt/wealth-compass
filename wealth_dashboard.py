@@ -865,22 +865,19 @@ with tabs[4]:
         </div>'''
     
     life_grid_html = f"""
-    <html><head><style>
-        * {{ margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', 'Noto Sans JP', sans-serif; }}
-        body {{ background: transparent; }}
+    <style>
         .li-grid {{ display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 4px; }}
         .li-card {{ background: #F0F9FF; border: 1px solid #E2E8F0; border-radius: 12px; padding: 16px; text-align: center;
                     box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); transition: all 0.2s ease; position: relative; overflow: hidden; }}
         .li-card:hover {{ transform: translateY(-2px); box-shadow: 0 8px 15px rgba(0,0,0,0.1); }}
         .li-card::before {{ content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, #3B82F6, #60A5FA); }}
         @media (max-width: 768px) {{
-            .li-grid {{ grid-template-columns: 1fr; }}
+            .li-grid {{ grid-template-columns: 1fr !important; }}
         }}
-    </style></head><body>
+    </style>
     <div class="li-grid">{cards_html}</div>
-    </body></html>
     """
-    components.html(life_grid_html, height=950)
+    st.markdown(life_grid_html, unsafe_allow_html=True)
 
 # --- Tab 3: 日本版 恐怖＆強欲メーター (CNN Fear & Greed Index 準拠) ---
 with tabs[2]:

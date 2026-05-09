@@ -1029,7 +1029,11 @@ with tabs[2]:
                 'FG_Index': (mom_score + str_score + brd_score + pc_score + volat_score + safe_score + junk_score) / 7.0,
                 'Nikkei225': nk['Close'],
                 'TOPIX': tp['Close']
-            }).dropna().last('365D') # 直近1年分
+            }).dropna()
+            
+            # 直近1年分を抽出 (last('365D') の代替)
+            one_year_ago = df_hist.index.max() - pd.Timedelta(days=365)
+            df_hist = df_hist[df_hist.index >= one_year_ago]
             
             return df_hist
         except Exception as e:

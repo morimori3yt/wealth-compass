@@ -964,7 +964,78 @@ with tabs[2]:
         # 均等加重平均スコア
         total_score = sum(s['score'] * s['weight'] for s in scores.values())
         return round(total_score, 1), scores
-    
+
+    @st.cache_data(ttl=3600)
+    def calc_fear_greed_history():
+        # 必要な期間: 1年(250日) + MA125用バッファ = 約400日
+        period = "500d"
+        try:
+            # 1. データの取得
+            nk = yf.Ticker("^N225").history(period=period)
+            tp = yf.Ticker("^TOPX").history(period=period)
+            tp_etf = yf.Ticker("1306.T").history(period=period)
+            mo_etf = yf.Ticker("2516.T").history(period=period)
+            nk_vol = yf.Ticker("1321.T").history(period=period)
+            vix = yf.Ticker("^VIX").history(period=period)
+            tlt = yf.Ticker("TLT").history(period=period)
+            hyg = yf.Ticker("HYG").history(period=period)
+            lqd = yf.Ticker("LQD").history(period=period)
+
+            # 共通のインデックスで揃える
+            common_idx = nk.index.intersection(vix.index)
+            
+            # 2. 各指標の計算 (Pandas ベクトル演算)
+            # ① モメンタム (Nikkei vs 125MA)
+            ma125 = nk['Close'].rolling(125).mean()
+            mom_pct = ((nk['Close'] - ma125) / ma125) * 100
+            mom_score = (50 + mom_pct * 4).clip(0, 100)
+            
+            # ② 株価の強さ (Large vs Small 20d return spread)
+            tp_ret20 = tp_etf['Close'].pct_change(20) * 100
+            mo_ret20 = mo_etf['Close'].pct_change(20) * 100
+            str_spread = tp_ret20 - mo_ret20
+            str_score = (50 + str_spread * 5).clip(0, 100)
+            
+            # ③ 市場の広がり (Vol vs 50d Avg Vol)
+            vol5d = nk_vol['Volume'].rolling(5).mean()
+            vol50d = nk_vol['Volume'].rolling(50).mean()
+            vol_ratio = ((vol5d / vol50d) - 1) * 100
+            brd_score = (50 + vol_ratio * 0.5).clip(0, 100)
+            
+            # ④ P/C比率代替 (VIX 5MA vs 20MA)
+            vix5ma = vix['Close'].rolling(5).mean()
+            vix20ma = vix['Close'].rolling(20).mean()
+            vix_trend = ((vix5ma - vix20ma) / vix20ma) * 100
+            pc_score = (50 - vix_trend * 3).clip(0, 100)
+            
+            # ⑤ ボラティリティ (VIX vs 50MA)
+            vix50ma = vix['Close'].rolling(50).mean()
+            vix_diff = ((vix['Close'] - vix50ma) / vix50ma) * 100
+            volat_score = (50 - vix_diff * 2).clip(0, 100)
+            
+            # ⑥ 安全資産逃避 (Equity vs Bond 20d return)
+            tlt_ret20 = tlt['Close'].pct_change(20) * 100
+            safe_spread = nk['Close'].pct_change(20)*100 - tlt_ret20
+            safe_score = (50 + safe_spread * 4).clip(0, 100)
+            
+            # ⑦ ジャンク債需要 (HYG vs LQD 20d return)
+            hyg_ret20 = hyg['Close'].pct_change(20) * 100
+            lqd_ret20 = lqd['Close'].pct_change(20) * 100
+            junk_spread = hyg_ret20 - lqd_ret20
+            junk_score = (50 + junk_spread * 10).clip(0, 100)
+            
+            # 3. 総合スコアの集計
+            df_hist = pd.DataFrame({
+                'FG_Index': (mom_score + str_score + brd_score + pc_score + volat_score + safe_score + junk_score) / 7.0,
+                'Nikkei225': nk['Close'],
+                'TOPIX': tp['Close']
+            }).dropna().last('365D') # 直近1年分
+            
+            return df_hist
+        except Exception as e:
+            st.error(f"時系列データの計算中にエラーが発生しました: {e}")
+            return None
+
     fg_score, fg_details = calc_fear_greed()
     
     # ラベル判定
@@ -995,9 +1066,53 @@ with tabs[2]:
         }
     ))
     fig_fg.update_layout(height=280, margin=dict(l=30, r=30, t=40, b=10), paper_bgcolor='rgba(0,0,0,0)', font={'family': 'Inter, Noto Sans JP'})
-    st.plotly_chart(fig_fg, use_container_width=True)
-    st.markdown(f'<div style="text-align:center; font-size:1.5rem; font-weight:700; color:{fg_color}; margin-top:-10px;">{fg_emoji} {fg_label}</div>', unsafe_allow_html=True)
     
+    col1, col2 = st.columns([1, 2])
+    with col1:
+        st.plotly_chart(fig_fg, use_container_width=True)
+        st.markdown(f'<div style="text-align:center; font-size:1.5rem; font-weight:700; color:{fg_color}; margin-top:-20px; margin-bottom:20px;">{fg_emoji} {fg_label}</div>', unsafe_allow_html=True)
+    
+    with col2:
+        df_hist = calc_fear_greed_history()
+        if df_hist is not None:
+            # 正規化 (騰落率ベース)
+            df_norm = df_hist.copy()
+            df_norm['Nikkei225'] = (df_norm['Nikkei225'] / df_norm['Nikkei225'].iloc[0]) * 100
+            df_norm['TOPIX'] = (df_norm['TOPIX'] / df_norm['TOPIX'].iloc[0]) * 100
+            
+            from plotly.subplots import make_subplots
+            fig_chart = make_subplots(specs=[[{"secondary_y": True}]])
+            
+            # 株価推移 (左軸)
+            fig_chart.add_trace(go.Scatter(x=df_norm.index, y=df_norm['Nikkei225'], name="日経平均 (%)", line=dict(color='#3B82F6', width=2)), secondary_y=False)
+            fig_chart.add_trace(go.Scatter(x=df_norm.index, y=df_norm['TOPIX'], name="TOPIX (%)", line=dict(color='#94A3B8', width=1.5, dash='dot')), secondary_y=False)
+            
+            # Fear & Greed (右軸)
+            fig_chart.add_trace(go.Scatter(
+                x=df_norm.index, y=df_norm['FG_Index'], name="Fear & Greed",
+                fill='tozeroy', fillcolor='rgba(148, 163, 184, 0.1)',
+                line=dict(color='#F59E0B', width=2.5)
+            ), secondary_y=True)
+            
+            # カラーゾーン設定
+            fig_chart.add_hrect(y0=0, y1=20, fillcolor="red", opacity=0.05, line_width=0, secondary_y=True)
+            fig_chart.add_hrect(y0=80, y1=100, fillcolor="green", opacity=0.05, line_width=0, secondary_y=True)
+
+            fig_chart.update_layout(
+                title_text="📈 センチメント vs 株価推移 (直近1年)",
+                hovermode="x unified",
+                legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+                height=320,
+                margin=dict(l=0, r=0, t=40, b=0),
+                paper_bgcolor='rgba(0,0,0,0)',
+                plot_bgcolor='rgba(0,0,0,0)',
+            )
+            fig_chart.update_xaxes(showgrid=False)
+            fig_chart.update_yaxes(title_text="株価騰落率 (%)", secondary_y=False, showgrid=True, gridcolor='#E2E8F0')
+            fig_chart.update_yaxes(title_text="F&G Index", secondary_y=True, range=[0, 100], showgrid=False)
+            
+            st.plotly_chart(fig_chart, use_container_width=True)
+
     # 構成指標ミニカード（7指標・CNN準拠）
     st.markdown("#### 📊 構成指標の内訳（CNN準拠・各 14.3% の均等加重）")
     indicator_names = {

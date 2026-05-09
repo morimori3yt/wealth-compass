@@ -978,7 +978,6 @@ with tabs[2]:
                 return df
 
             nk = get_safe_data("^N225")
-            tp = get_safe_data("^TOPX")
             tp_etf = get_safe_data("1306.T")
             mo_etf = get_safe_data("2516.T")
             nk_vol = get_safe_data("1321.T")
@@ -988,7 +987,7 @@ with tabs[2]:
             lqd = get_safe_data("LQD")
 
             # 必須データが一つでも欠けていたら中断
-            if any(x is None for x in [nk, tp, tp_etf, mo_etf, nk_vol, vix, tlt, hyg, lqd]):
+            if any(x is None for x in [nk, tp_etf, mo_etf, nk_vol, vix, tlt, hyg, lqd]):
                 return None
 
             # 共通のインデックスで揃える (日本営業日ベース)
@@ -1046,7 +1045,7 @@ with tabs[2]:
             df_hist = pd.DataFrame({
                 'FG_Index': (mom_score + str_score + brd_score + pc_score + volat_score + safe_score + junk_score) / 7.0,
                 'Nikkei225': nk['Close'],
-                'TOPIX': tp['Close']
+                'TOPIX': tp_etf_c
             }).dropna()
             
             if df_hist.empty:

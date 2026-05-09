@@ -1192,20 +1192,20 @@ def render_footer_ad():
     ">
         <style>
             /* PCサイズ */
-            #footer-ad-root { height: 125px; }
-            #footer-ad-content img, #footer-ad-content iframe {
+            #footer-ad-root {{ height: 125px; }}
+            #footer-ad-content img, #footer-ad-content iframe {{
                 max-width: 100% !important;
                 height: auto !important;
                 max-height: 120px !important;
                 object-fit: contain;
-            }
+            }}
             /* スマホサイズ */
-            @media (max-width: 768px) {
-                #footer-ad-root { height: 60px; }
-                #footer-ad-content img, #footer-ad-content iframe {
+            @media (max-width: 768px) {{
+                #footer-ad-root {{ height: 60px; }}
+                #footer-ad-content img, #footer-ad-content iframe {{
                     max-height: 55px !important;
-                }
-            }
+                }}
+            }}
         </style>
         <div id="footer-ad-content" style="display:flex; justify-content:center; align-items:flex-end; width:100%; height:100%; padding: 0 10px 2px 10px; overflow: hidden;">
             <!-- 広告挿入エリア -->

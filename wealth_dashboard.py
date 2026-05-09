@@ -314,9 +314,16 @@ def render_rotating_ads():
         
         // 親画面の操作（タブクリックなど）を検知して即座に切り替える
         try {{
+            const blockShortcuts = (e) => {{
+                // Cキー単体、またはShift+Cなどのショートカットをブロック（コピー Cmd+C / Ctrl+C は通す）
+                if ((e.key.toLowerCase() === 'c') && !e.metaKey && !e.ctrlKey) {{
+                    e.stopPropagation();
+                }}
+            }};
             window.parent.document.addEventListener('click', function(e) {{
                 setTimeout(changeAd, 100);
             }}, true);
+            window.parent.document.addEventListener('keydown', blockShortcuts, true);
         }} catch (e) {{
             // クロスドメイン制限がある場合でもタイマーは動作し続ける
         }}

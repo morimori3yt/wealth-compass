@@ -830,7 +830,10 @@ with tabs[4]:
         }}, 1000);
     </script>
     """
-    components.html(counter_html, height=450)
+    components.html(counter_html, height=350)
+    
+    # シェアボタンをメーター直下に配置
+    st.markdown(get_share_button_html(f"【不労所得メーター】💰 私の資産は1日に「{daily_income_yen:,.0f}円」、1年で「{annual_income_yen:,.0f}円」稼いでいます！ 🗓️✨ #配当金 #資産形成の羅針盤"), unsafe_allow_html=True)
     
     # 時給換算カード（components.htmlでCSS Grid描画: PC=3列, スマホ=1列/金額昇順）
     st.markdown("#### 💡 生活費との比較（あなたの不労所得で何が賄える？）")
@@ -878,9 +881,6 @@ with tabs[4]:
     </body></html>
     """
     components.html(life_grid_html, height=950)
-    
-    # シェアボタン
-    st.markdown(get_share_button_html(f"【不労所得メーター】💰 私の資産は1日に「{daily_income_yen:,.0f}円」、1年で「{annual_income_yen:,.0f}円」稼いでいます！ 🗓️✨ #配当金 #資産形成の羅針盤"), unsafe_allow_html=True)
 
 # --- Tab 3: 日本版 恐怖＆強欲メーター (CNN Fear & Greed Index 準拠) ---
 with tabs[2]:

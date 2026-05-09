@@ -1152,7 +1152,6 @@ with tabs[6]:
         
 # --- 下部固定広告（オーバーレイ） ---
 def render_footer_ad():
-    # 広告リストの読み込み
     def get_overlay_ad():
         default_ad = '<script src="https://adm.shinobi.jp/s/491908292e11c2a61985516e6624c50b"></script>'
         try:
@@ -1165,38 +1164,46 @@ def render_footer_ad():
             return default_ad
 
     selected_ad = get_overlay_ad()
+
+    # メインコンテンツの底上げ用CSS
+    st.markdown("<style>.stApp { margin-bottom: 70px; }</style>", unsafe_allow_html=True)
+
+    # 枠と中身を一体化したHTML
+    footer_html = f"""
+    <div id="footer-ad-root" style="
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 65px;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(5px);
+        z-index: 999999;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        border-top: 1px solid #e2e8f0;
+        box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+    ">
+        {selected_ad}
+    </div>
+    <script>
+        // 親画面（Streamlit本体）に対しても、この要素を最前面に固定するよう指示
+        try {{
+            const frame = window.frameElement;
+            if (frame) {{
+                frame.style.position = 'fixed';
+                frame.style.bottom = '0';
+                frame.style.left = '0';
+                frame.style.width = '100%';
+                frame.style.zIndex = '999999';
+                frame.style.pointerEvents = 'none'; // 広告以外を透過
+            }}
+            document.getElementById('footer-ad-root').style.pointerEvents = 'auto';
+        }} catch (e) {{ console.log(e); }}
+    </script>
+    """
     
-    # CSSで画面最下部に固定
-    st.markdown("""
-        <style>
-        .stApp { margin-bottom: 70px; }
-        .footer-ad-container {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: 65px;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(5px);
-            z-index: 999999;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            border-top: 1px solid #e2e8f0;
-            box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
-        }
-        @media (max-width: 768px) { .footer-ad-container { height: 60px; } }
-        </style>
-        <div class="footer-ad-container">
-    """, unsafe_allow_html=True)
-    
-    with st.container():
-        components.html(f"""
-            <div style="display:flex; justify-content:center; align-items:center; width:100%; height:100%;">
-                {selected_ad}
-            </div>
-        """, height=60)
-    
-    st.markdown("</div>", unsafe_allow_html=True)
+    components.html(footer_html, height=65)
 
 render_footer_ad()

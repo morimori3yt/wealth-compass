@@ -978,7 +978,7 @@ with tabs[2]:
                 return df
 
             nk = get_safe_data("^N225")
-            tp_etf = get_safe_data("1306.T")
+            tp_stable = get_safe_data("1348.T") # 分割の影響がないETFを採用
             mo_etf = get_safe_data("2516.T")
             nk_vol = get_safe_data("1321.T")
             vix = get_safe_data("^VIX")
@@ -987,7 +987,7 @@ with tabs[2]:
             lqd = get_safe_data("LQD")
 
             # 必須データが一つでも欠けていたら中断
-            if any(x is None for x in [nk, tp_etf, mo_etf, nk_vol, vix, tlt, hyg, lqd]):
+            if any(x is None for x in [nk, tp_stable, mo_etf, nk_vol, vix, tlt, hyg, lqd]):
                 return None
 
             # 共通のインデックスで揃える (日本営業日ベース)
@@ -1001,9 +1001,9 @@ with tabs[2]:
             mom_score = (50 + mom_pct * 4).clip(0, 100)
             
             # ② 株価の強さ (Large vs Small 20d return spread)
-            tp_etf_c = align(tp_etf['Close'])
+            tp_stable_c = align(tp_stable['Close'])
             mo_etf_c = align(mo_etf['Close'])
-            tp_ret20 = tp_etf_c.pct_change(20) * 100
+            tp_ret20 = tp_stable_c.pct_change(20) * 100
             mo_ret20 = mo_etf_c.pct_change(20) * 100
             str_spread = tp_ret20 - mo_ret20
             str_score = (50 + str_spread * 5).clip(0, 100)
@@ -1045,7 +1045,7 @@ with tabs[2]:
             df_hist = pd.DataFrame({
                 'FG_Index': (mom_score + str_score + brd_score + pc_score + volat_score + safe_score + junk_score) / 7.0,
                 'Nikkei225': nk['Close'],
-                'TOPIX': tp_etf_c
+                'TOPIX': tp_stable_c
             }).dropna()
             
             if df_hist.empty:

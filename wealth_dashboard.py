@@ -325,6 +325,10 @@ def render_rotating_ads():
     
     st.markdown(f"""
         <style>
+        .block-container {
+            padding-top: 1.5rem !important;
+            padding-bottom: 0rem !important;
+        }
         .main-title {{
             font-size: clamp(1.5rem, 6.5vw, 2.8rem);
             font-weight: 800;

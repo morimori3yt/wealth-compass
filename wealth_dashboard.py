@@ -13,7 +13,7 @@ import time
 
 # --- ページ設定 ---
 st.set_page_config(
-    page_title="資産形成の羅針盤",
+    page_title="資産形成の羅針盤 | 不労所得カウンター・日本版 Fear & Greed Index・暴落シミュレーター",
     page_icon="🧭",
     layout="wide",
     initial_sidebar_state="collapsed"
@@ -50,6 +50,21 @@ default_assets = [
     "日経平均", "TOPIX", "NYダウ", "S&P 500", "オルカン (ACWI)", "SOX指数", "ドル円", "ビットコイン",
     "NASDAQ 100", "FANG+", "VIX恐怖指数", "ユーロ円", "金先物", "WTI原油", "米10年債利回り", "上海総合"
 ]
+
+# --- 共通ユーティリティ ---
+def get_share_button_html(text, url="https://wealth-compass.streamlit.app/"):
+    import urllib.parse
+    encoded_text = urllib.parse.quote(text)
+    encoded_url = urllib.parse.quote(url)
+    share_url = f"https://twitter.com/intent/tweet?text={encoded_text}&url={encoded_url}"
+    return f'''
+        <div style="text-align:right; margin-top:10px;">
+            <a href="{share_url}" target="_blank" style="background-color: #000000; color: #ffffff; text-decoration: none; padding: 8px 16px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; display: inline-flex; align-items: center; gap: 6px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                結果をXでシェア
+            </a>
+        </div>
+    '''
 
 # --- 関数群 ---
 
@@ -729,6 +744,9 @@ with tabs[5]:
             res = st.session_state['rev_results']
             st.markdown(f'<div class="rev-panel"><div style="font-weight:700; margin-bottom:8px; border-bottom:1px solid #475569; font-size:1.1rem;">最短FIRE可能年齢</div><div style="color:#10B981;">🚀 強気: <b>{res["強気"] if res["強気"] else "不可"}歳</b></div><div style="color:#3B82F6;">📊 通常: <b>{res["通常"] if res["通常"] else "不可"}歳</b></div><div style="color:#EF4444;">⚠️ 弱気: <b>{res["弱気"] if res["弱気"] else "不可"}歳</b></div></div>', unsafe_allow_html=True)
             if res['通常'] and st.button("通常結果を適用"): st.session_state['fire_age_val'] = res['通常']; st.rerun()
+            
+            # シェアボタン
+            st.markdown(get_share_button_html(f"【FIRE診断】私の最短FIRE可能年齢は「{res['通常']}歳」でした！"), unsafe_allow_html=True)
 
     with f_out:
         sim = FIRESimulator()
@@ -843,6 +861,9 @@ with tabs[4]:
     </body></html>
     """
     components.html(life_grid_html, height=950)
+    
+    # シェアボタン
+    st.markdown(get_share_button_html(f"【不労所得メーター】私の資産は1日に「{daily_income_yen:,.0f}円」、1年で「{annual_income_yen:,.0f}円」稼いでいます！"), unsafe_allow_html=True)
 
 # --- Tab 3: 日本版 恐怖＆強欲メーター (CNN Fear & Greed Index 準拠) ---
 with tabs[2]:
@@ -989,6 +1010,9 @@ with tabs[2]:
                 <div style="font-size:0.7rem; color:#64748B;">{data["value"]}</div>
                 <div style="font-size:0.62rem; color:#94A3B8; margin-top:2px;">{indicator_desc[key]}</div>
             </div>''', unsafe_allow_html=True)
+    
+    # シェアボタン
+    st.markdown(get_share_button_html(f"【日本版 Fear & Greed Index】現在の市場心理は「{fg_label}」({fg_score})です！投資家は今、{fg_label}に傾いています。"), unsafe_allow_html=True)
 
 # --- Tab 7: 暴落プレイバック ストレステスト ---
 with tabs[6]:
@@ -1112,3 +1136,6 @@ with tabs[6]:
         if add_inv > 0:
             recovery_gain = add_inv * (100 / (100 + cr['crash']['max_drop'])) - add_inv
             st.success(f"底値で **{add_inv:,.0f}万円** を追加投資した場合、回復時点で **+{recovery_gain:,.0f}万円** の利益が見込めます（元本回復ベース）。")
+        
+        # シェアボタン
+        st.markdown(get_share_button_html(f"【暴落テスト】もし今「{cr['selected_crash']}」が起きたら、私の資産は最大で「{max_loss:,.0f}万円」減少する可能性があるようです…😱"), unsafe_allow_html=True)

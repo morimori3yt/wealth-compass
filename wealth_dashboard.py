@@ -1150,18 +1150,26 @@ with tabs[6]:
             recovery_gain = add_inv * (100 / (100 + cr['crash']['max_drop'])) - add_inv
             st.success(f"底値で **{add_inv:,.0f}万円** を追加投資した場合、回復時点で **+{recovery_gain:,.0f}万円** の利益が見込めます（元本回復ベース）。")
         
-# --- 下部固定広告（忍者AdMax） ---
+# --- 下部固定広告（オーバーレイ） ---
 def render_footer_ad():
-    # 忍者AdMaxのコード
-    ad_code = '<script src="https://adm.shinobi.jp/s/491908292e11c2a61985516e6624c50b"></script>'
+    # 広告リストの読み込み
+    def get_overlay_ad():
+        default_ad = '<script src="https://adm.shinobi.jp/s/491908292e11c2a61985516e6624c50b"></script>'
+        try:
+            import random
+            df_ads = pd.read_csv('overlay_ads_list.csv')
+            if not df_ads.empty and 'html' in df_ads.columns:
+                return random.choice(df_ads['html'].dropna().values)
+            return default_ad
+        except:
+            return default_ad
+
+    selected_ad = get_overlay_ad()
     
     # CSSで画面最下部に固定
     st.markdown("""
         <style>
-        /* メインコンテンツが広告に隠れないよう、全体の底に余白を追加 */
-        .stApp {
-            margin-bottom: 70px;
-        }
+        .stApp { margin-bottom: 70px; }
         .footer-ad-container {
             position: fixed;
             bottom: 0;
@@ -1177,21 +1185,15 @@ def render_footer_ad():
             border-top: 1px solid #e2e8f0;
             box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
         }
-        /* スマホ対応：高さの微調整 */
-        @media (max-width: 768px) {
-            .footer-ad-container {
-                height: 60px;
-            }
-        }
+        @media (max-width: 768px) { .footer-ad-container { height: 60px; } }
         </style>
-        <div class="footer-ad-container" id="footer-ad">
+        <div class="footer-ad-container">
     """, unsafe_allow_html=True)
     
-    # 広告本体をiframe（components）で描画
     with st.container():
         components.html(f"""
             <div style="display:flex; justify-content:center; align-items:center; width:100%; height:100%;">
-                {ad_code}
+                {selected_ad}
             </div>
         """, height=60)
     

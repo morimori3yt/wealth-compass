@@ -1161,17 +1161,26 @@ def render_footer_ad():
     except:
         ads_json = json.dumps(['<div style="color:#64748B; font-size:12px;">Wealth Compass Ad</div>'])
 
-    # メインコンテンツの底上げ用CSS
-    st.markdown("<style>.stApp { margin-bottom: 155px; }</style>", unsafe_allow_html=True)
+    # レスポンシブな底上げ用CSS
+    st.markdown("""
+        <style>
+        /* PC用（デフォルト） */
+        .stApp { margin-bottom: 155px; }
+        
+        /* スマホ用（幅768px未満） */
+        @media (max-width: 768px) {
+            .stApp { margin-bottom: 90px; }
+        }
+        </style>
+    """, unsafe_allow_html=True)
 
-    # 回転ロジックを含むHTML/JS
+    # 回転ロジックを含むHTML/JS（レスポンシブ対応）
     footer_html = f"""
     <div id="footer-ad-root" style="
         position: fixed;
         bottom: 25px;
         left: 0;
         width: 100%;
-        height: 125px; /* 125pxに変更 */
         background: rgba(255, 255, 255, 0.95);
         backdrop-filter: blur(8px);
         z-index: 999999;
@@ -1182,12 +1191,21 @@ def render_footer_ad():
         box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
     ">
         <style>
-            #footer-ad-content img, #footer-ad-content iframe {{
+            /* PCサイズ */
+            #footer-ad-root { height: 125px; }
+            #footer-ad-content img, #footer-ad-content iframe {
                 max-width: 100% !important;
                 height: auto !important;
-                max-height: 120px !important; /* 枠に合わせて調整 */
+                max-height: 120px !important;
                 object-fit: contain;
-            }}
+            }
+            /* スマホサイズ */
+            @media (max-width: 768px) {
+                #footer-ad-root { height: 60px; }
+                #footer-ad-content img, #footer-ad-content iframe {
+                    max-height: 55px !important;
+                }
+            }
         </style>
         <div id="footer-ad-content" style="display:flex; justify-content:center; align-items:flex-end; width:100%; height:100%; padding: 0 10px 2px 10px; overflow: hidden;">
             <!-- 広告挿入エリア -->
@@ -1220,22 +1238,30 @@ def render_footer_ad():
                 document.addEventListener('click', rotateAd);
             }}
 
+            // レスポンシブな高さ制御
             try {{
                 const frame = window.frameElement;
                 if (frame) {{
-                    frame.style.position = 'fixed';
-                    frame.style.bottom = '25px'; 
-                    frame.style.left = '0';
-                    frame.style.width = '100%';
-                    frame.style.height = '125px';
-                    frame.style.zIndex = '999999';
-                    frame.style.pointerEvents = 'none';
+                    const updateSize = () => {{
+                        const isMobile = window.innerWidth < 768;
+                        const h = isMobile ? 60 : 125;
+                        frame.style.position = 'fixed';
+                        frame.style.bottom = '25px'; 
+                        frame.style.left = '0';
+                        frame.style.width = '100%';
+                        frame.style.height = h + 'px';
+                        frame.style.zIndex = '999999';
+                        frame.style.pointerEvents = 'none';
+                    }};
+                    updateSize();
+                    window.addEventListener('resize', updateSize);
                 }}
                 document.getElementById('footer-ad-root').style.pointerEvents = 'auto';
             }} catch (e) {{ console.log(e); }}
         }})();
     </script>
     """
+    # Python側のheightは最大値に設定し、JS側で縮小を制御
     components.html(footer_html, height=125)
 
 render_footer_ad()

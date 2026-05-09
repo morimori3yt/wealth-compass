@@ -1169,7 +1169,7 @@ def render_footer_ad():
         
         /* スマホ用（幅768px未満） */
         @media (max-width: 768px) {
-            .stApp {{ margin-bottom: 100px; }}
+            .stApp {{ margin-bottom: 110px; }}
         }
         </style>
     """, unsafe_allow_html=True)
@@ -1201,9 +1201,9 @@ def render_footer_ad():
             }}
             /* スマホサイズ */
             @media (max-width: 768px) {{
-                #footer-ad-root {{ height: 70px; }}
+                #footer-ad-root {{ height: 80px; }}
                 #footer-ad-content img, #footer-ad-content iframe {{
-                    max-height: 65px !important;
+                    max-height: 75px !important;
                 }}
             }}
         </style>
@@ -1244,7 +1244,7 @@ def render_footer_ad():
                 if (frame) {{
                     const updateSize = () => {{
                         const isMobile = window.innerWidth < 768;
-                        const h = isMobile ? 70 : 125;
+                        const h = isMobile ? 80 : 125;
                         frame.style.position = 'fixed';
                         frame.style.bottom = '25px'; 
                         frame.style.left = '0';

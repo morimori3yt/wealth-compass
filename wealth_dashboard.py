@@ -971,21 +971,17 @@ with tabs[2]:
         period = "500d"
         try:
             # 1. データの取得
-            nk = yf.Ticker("^N225").history(period=period)
-            tp = yf.Ticker("^TOPX").history(period=period)
-            tp_etf = yf.Ticker("1306.T").history(period=period)
-            mo_etf = yf.Ticker("2516.T").history(period=period)
-            nk_vol = yf.Ticker("1321.T").history(period=period)
-            vix = yf.Ticker("^VIX").history(period=period)
-            tlt = yf.Ticker("TLT").history(period=period)
-            hyg = yf.Ticker("HYG").history(period=period)
-            lqd = yf.Ticker("LQD").history(period=period)
+            nk = yf.Ticker("^N225").history(period=period); nk.index = nk.index.tz_localize(None)
+            tp = yf.Ticker("^TOPX").history(period=period); tp.index = tp.index.tz_localize(None)
+            tp_etf = yf.Ticker("1306.T").history(period=period); tp_etf.index = tp_etf.index.tz_localize(None)
+            mo_etf = yf.Ticker("2516.T").history(period=period); mo_etf.index = mo_etf.index.tz_localize(None)
+            nk_vol = yf.Ticker("1321.T").history(period=period); nk_vol.index = nk_vol.index.tz_localize(None)
+            vix = yf.Ticker("^VIX").history(period=period); vix.index = vix.index.tz_localize(None)
+            tlt = yf.Ticker("TLT").history(period=period); tlt.index = tlt.index.tz_localize(None)
+            hyg = yf.Ticker("HYG").history(period=period); hyg.index = hyg.index.tz_localize(None)
+            lqd = yf.Ticker("LQD").history(period=period); lqd.index = lqd.index.tz_localize(None)
 
-            # 共通のインデックスで揃える
-            common_idx = nk.index.intersection(vix.index)
-            
-            # 2. 各指標の計算 (Pandas ベクトル演算)
-            # 全てのデータを日経平均のインデックス（日本営業日）に揃える
+            # 共通のインデックスで揃える (日本営業日ベース)
             idx = nk.index
             def align(df):
                 return df.reindex(idx).ffill()

@@ -985,42 +985,54 @@ with tabs[2]:
             common_idx = nk.index.intersection(vix.index)
             
             # 2. 各指標の計算 (Pandas ベクトル演算)
+            # 全てのデータを日経平均のインデックス（日本営業日）に揃える
+            idx = nk.index
+            def align(df):
+                return df.reindex(idx).ffill()
+
             # ① モメンタム (Nikkei vs 125MA)
             ma125 = nk['Close'].rolling(125).mean()
             mom_pct = ((nk['Close'] - ma125) / ma125) * 100
             mom_score = (50 + mom_pct * 4).clip(0, 100)
             
             # ② 株価の強さ (Large vs Small 20d return spread)
-            tp_ret20 = tp_etf['Close'].pct_change(20) * 100
-            mo_ret20 = mo_etf['Close'].pct_change(20) * 100
+            tp_etf_c = align(tp_etf['Close'])
+            mo_etf_c = align(mo_etf['Close'])
+            tp_ret20 = tp_etf_c.pct_change(20) * 100
+            mo_ret20 = mo_etf_c.pct_change(20) * 100
             str_spread = tp_ret20 - mo_ret20
             str_score = (50 + str_spread * 5).clip(0, 100)
             
             # ③ 市場の広がり (Vol vs 50d Avg Vol)
-            vol5d = nk_vol['Volume'].rolling(5).mean()
-            vol50d = nk_vol['Volume'].rolling(50).mean()
+            nk_vol_v = align(nk_vol['Volume'])
+            vol5d = nk_vol_v.rolling(5).mean()
+            vol50d = nk_vol_v.rolling(50).mean()
             vol_ratio = ((vol5d / vol50d) - 1) * 100
             brd_score = (50 + vol_ratio * 0.5).clip(0, 100)
             
             # ④ P/C比率代替 (VIX 5MA vs 20MA)
-            vix5ma = vix['Close'].rolling(5).mean()
-            vix20ma = vix['Close'].rolling(20).mean()
+            vix_c = align(vix['Close'])
+            vix5ma = vix_c.rolling(5).mean()
+            vix20ma = vix_c.rolling(20).mean()
             vix_trend = ((vix5ma - vix20ma) / vix20ma) * 100
             pc_score = (50 - vix_trend * 3).clip(0, 100)
             
             # ⑤ ボラティリティ (VIX vs 50MA)
-            vix50ma = vix['Close'].rolling(50).mean()
-            vix_diff = ((vix['Close'] - vix50ma) / vix50ma) * 100
+            vix50ma = vix_c.rolling(50).mean()
+            vix_diff = ((vix_c - vix50ma) / vix50ma) * 100
             volat_score = (50 - vix_diff * 2).clip(0, 100)
             
             # ⑥ 安全資産逃避 (Equity vs Bond 20d return)
-            tlt_ret20 = tlt['Close'].pct_change(20) * 100
+            tlt_c = align(tlt['Close'])
+            tlt_ret20 = tlt_c.pct_change(20) * 100
             safe_spread = nk['Close'].pct_change(20)*100 - tlt_ret20
             safe_score = (50 + safe_spread * 4).clip(0, 100)
             
             # ⑦ ジャンク債需要 (HYG vs LQD 20d return)
-            hyg_ret20 = hyg['Close'].pct_change(20) * 100
-            lqd_ret20 = lqd['Close'].pct_change(20) * 100
+            hyg_c = align(hyg['Close'])
+            lqd_c = align(lqd['Close'])
+            hyg_ret20 = hyg_c.pct_change(20) * 100
+            lqd_ret20 = lqd_c.pct_change(20) * 100
             junk_spread = hyg_ret20 - lqd_ret20
             junk_score = (50 + junk_spread * 10).clip(0, 100)
             
@@ -1031,11 +1043,17 @@ with tabs[2]:
                 'TOPIX': tp['Close']
             }).dropna()
             
-            # 直近1年分を抽出 (last('365D') の代替)
+            if df_hist.empty:
+                return None
+
+            # 直近1年分を抽出
             one_year_ago = df_hist.index.max() - pd.Timedelta(days=365)
             df_hist = df_hist[df_hist.index >= one_year_ago]
             
             return df_hist
+        except Exception as e:
+            st.error(f"時系列データの計算中にエラーが発生しました: {e}")
+            return None
         except Exception as e:
             st.error(f"時系列データの計算中にエラーが発生しました: {e}")
             return None

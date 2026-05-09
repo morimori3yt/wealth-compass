@@ -1150,5 +1150,51 @@ with tabs[6]:
             recovery_gain = add_inv * (100 / (100 + cr['crash']['max_drop'])) - add_inv
             st.success(f"底値で **{add_inv:,.0f}万円** を追加投資した場合、回復時点で **+{recovery_gain:,.0f}万円** の利益が見込めます（元本回復ベース）。")
         
-        # シェアボタン
-        st.markdown(get_share_button_html(f"【暴落テスト】もし今「{cr['selected_crash']}」が起きたら、私の資産は最大で「{max_loss:,.0f}万円」減少する可能性があるようです…😱"), unsafe_allow_html=True)
+# --- 下部固定広告（忍者AdMax） ---
+def render_footer_ad():
+    # 忍者AdMaxのコード
+    ad_code = '<script src="https://adm.shinobi.jp/s/491908292e11c2a61985516e6624c50b"></script>'
+    
+    # CSSで画面最下部に固定
+    st.markdown("""
+        <style>
+        /* メインコンテンツが広告に隠れないよう、全体の底に余白を追加 */
+        .stApp {
+            margin-bottom: 70px;
+        }
+        .footer-ad-container {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 65px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(5px);
+            z-index: 999999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-top: 1px solid #e2e8f0;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+        }
+        /* スマホ対応：高さの微調整 */
+        @media (max-width: 768px) {
+            .footer-ad-container {
+                height: 60px;
+            }
+        }
+        </style>
+        <div class="footer-ad-container" id="footer-ad">
+    """, unsafe_allow_html=True)
+    
+    # 広告本体をiframe（components）で描画
+    with st.container():
+        components.html(f"""
+            <div style="display:flex; justify-content:center; align-items:center; width:100%; height:100%;">
+                {ad_code}
+            </div>
+        """, height=60)
+    
+    st.markdown("</div>", unsafe_allow_html=True)
+
+render_footer_ad()

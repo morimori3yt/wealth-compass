@@ -58,8 +58,9 @@ def get_share_button_html(text, url="https://wealth-compass.streamlit.app/"):
     encoded_url = urllib.parse.quote(url)
     share_url = f"https://twitter.com/intent/tweet?text={encoded_text}&url={encoded_url}"
     return f'''
-        <div style="text-align:right; margin-top:10px;">
-            <a href="{share_url}" target="_blank" style="background-color: #000000; color: #ffffff; text-decoration: none; padding: 8px 16px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; display: inline-flex; align-items: center; gap: 6px;">
+        <div style="display: flex; align-items: center; justify-content: flex-end; gap: 12px; margin-top: 12px; flex-wrap: wrap;">
+            <span style="font-size: 0.75rem; color: #64748B; font-family: 'Inter', sans-serif;">📸 スクリーンショットを撮って一緒に投稿しましょう</span>
+            <a href="{share_url}" target="_blank" style="background-color: #000000; color: #ffffff; text-decoration: none; padding: 8px 16px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
                 結果をXでシェア
             </a>

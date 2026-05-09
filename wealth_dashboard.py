@@ -1162,7 +1162,7 @@ def render_footer_ad():
         ads_json = json.dumps(['<div style="color:#64748B; font-size:12px;">Wealth Compass Ad</div>'])
 
     # メインコンテンツの底上げ用CSS
-    st.markdown("<style>.stApp { margin-bottom: 75px; }</style>", unsafe_allow_html=True)
+    st.markdown("<style>.stApp { margin-bottom: 130px; }</style>", unsafe_allow_html=True)
 
     # 回転ロジックを含むHTML/JS
     footer_html = f"""
@@ -1171,7 +1171,7 @@ def render_footer_ad():
         bottom: 0;
         left: 0;
         width: 100%;
-        height: 65px;
+        height: 120px;
         background: rgba(255, 255, 255, 0.95);
         backdrop-filter: blur(8px);
         z-index: 999999;
@@ -1185,6 +1185,7 @@ def render_footer_ad():
             #footer-ad-content img, #footer-ad-content iframe {{
                 max-width: 100% !important;
                 height: auto !important;
+                max-height: 110px !important;
                 object-fit: contain;
             }}
         </style>
@@ -1202,7 +1203,6 @@ def render_footer_ad():
                 const randomAd = ads[Math.floor(Math.random() * ads.length)];
                 contentDiv.innerHTML = randomAd;
                 
-                // scriptタグの強制再実行
                 Array.from(contentDiv.querySelectorAll("script")).forEach(oldScript => {{
                     const newScript = document.createElement("script");
                     Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
@@ -1211,8 +1211,8 @@ def render_footer_ad():
                 }});
             }}
 
-            rotateAd(); // 初期実行
-            setInterval(rotateAd, 10000); // 10秒タイマー
+            rotateAd(); 
+            setInterval(rotateAd, 10000); 
 
             try {{
                 window.parent.document.addEventListener('click', rotateAd);
@@ -1227,7 +1227,7 @@ def render_footer_ad():
                     frame.style.bottom = '0';
                     frame.style.left = '0';
                     frame.style.width = '100%';
-                    frame.style.height = '65px';
+                    frame.style.height = '120px';
                     frame.style.zIndex = '999999';
                     frame.style.pointerEvents = 'none';
                 }}
@@ -1236,6 +1236,6 @@ def render_footer_ad():
         }})();
     </script>
     """
-    components.html(footer_html, height=65)
+    components.html(footer_html, height=120)
 
 render_footer_ad()

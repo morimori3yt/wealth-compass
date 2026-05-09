@@ -1165,26 +1165,27 @@ def render_footer_ad():
 
     selected_ad = get_overlay_ad()
 
-    # メインコンテンツの底上げ用CSS（実験用にさらに広げる）
-    st.markdown("<style>.stApp { margin-bottom: 310px; }</style>", unsafe_allow_html=True)
+    # メインコンテンツの底上げ用CSS
+    st.markdown("<style>.stApp { margin-bottom: 75px; }</style>", unsafe_allow_html=True)
 
-    # 実験用：赤い点線の枠を追加し、高さを300pxに変更
+    # スタイリッシュな固定枠HTML
     footer_html = f"""
     <div id="footer-ad-root" style="
         position: fixed;
-        bottom: 10px;
+        bottom: 0;
         left: 0;
         width: 100%;
-        height: 300px;
-        background: rgba(255, 255, 255, 0.9);
-        border: 2px dashed #EF4444; /* 位置確認用の赤い点線 */
+        height: 65px;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(8px);
         z-index: 999999;
         display: flex;
         justify-content: center;
         align-items: center;
+        border-top: 1px solid #e2e8f0;
+        box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
     ">
-        <div style="text-align:center; width:100%;">
-            <div style="font-size:10px; color:#EF4444; margin-bottom:5px;">[広告表示テストエリア: 300px]</div>
+        <div style="display:flex; justify-content:center; align-items:center; width:100%; height:100%; padding: 0 10px;">
             {selected_ad}
         </div>
     </div>
@@ -1196,7 +1197,7 @@ def render_footer_ad():
                 frame.style.bottom = '0';
                 frame.style.left = '0';
                 frame.style.width = '100%';
-                frame.style.height = '310px';
+                frame.style.height = '65px';
                 frame.style.zIndex = '999999';
                 frame.style.pointerEvents = 'none';
             }}
@@ -1205,6 +1206,6 @@ def render_footer_ad():
     </script>
     """
     
-    components.html(footer_html, height=310)
+    components.html(footer_html, height=65)
 
 render_footer_ad()

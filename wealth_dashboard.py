@@ -1165,30 +1165,30 @@ def render_footer_ad():
 
     selected_ad = get_overlay_ad()
 
-    # メインコンテンツの底上げ用CSS
-    st.markdown("<style>.stApp { margin-bottom: 70px; }</style>", unsafe_allow_html=True)
+    # メインコンテンツの底上げ用CSS（実験用にさらに広げる）
+    st.markdown("<style>.stApp { margin-bottom: 310px; }</style>", unsafe_allow_html=True)
 
-    # 枠と中身を一体化したHTML
+    # 実験用：赤い点線の枠を追加し、高さを300pxに変更
     footer_html = f"""
     <div id="footer-ad-root" style="
         position: fixed;
-        bottom: 0;
+        bottom: 10px;
         left: 0;
         width: 100%;
-        height: 65px;
-        background: rgba(255, 255, 255, 0.95);
-        backdrop-filter: blur(5px);
+        height: 300px;
+        background: rgba(255, 255, 255, 0.9);
+        border: 2px dashed #EF4444; /* 位置確認用の赤い点線 */
         z-index: 999999;
         display: flex;
         justify-content: center;
         align-items: center;
-        border-top: 1px solid #e2e8f0;
-        box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
     ">
-        {selected_ad}
+        <div style="text-align:center; width:100%;">
+            <div style="font-size:10px; color:#EF4444; margin-bottom:5px;">[広告表示テストエリア: 300px]</div>
+            {selected_ad}
+        </div>
     </div>
     <script>
-        // 親画面（Streamlit本体）に対しても、この要素を最前面に固定するよう指示
         try {{
             const frame = window.frameElement;
             if (frame) {{
@@ -1196,14 +1196,15 @@ def render_footer_ad():
                 frame.style.bottom = '0';
                 frame.style.left = '0';
                 frame.style.width = '100%';
+                frame.style.height = '310px';
                 frame.style.zIndex = '999999';
-                frame.style.pointerEvents = 'none'; // 広告以外を透過
+                frame.style.pointerEvents = 'none';
             }}
             document.getElementById('footer-ad-root').style.pointerEvents = 'auto';
         }} catch (e) {{ console.log(e); }}
     </script>
     """
     
-    components.html(footer_html, height=65)
+    components.html(footer_html, height=310)
 
 render_footer_ad()

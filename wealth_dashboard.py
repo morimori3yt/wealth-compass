@@ -1186,7 +1186,7 @@ def render_footer_ad():
         z-index: 999999;
         display: flex;
         justify-content: center;
-        align-items: flex-end;
+        align-items: center; /* 中央寄せに戻す */
         border-top: 1px solid #e2e8f0;
         box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
     ">
@@ -1203,11 +1203,11 @@ def render_footer_ad():
             @media (max-width: 768px) {{
                 #footer-ad-root {{ height: 60px; }}
                 #footer-ad-content img, #footer-ad-content iframe {{
-                    max-height: 55px !important;
+                    max-height: 58px !important;
                 }}
             }}
         </style>
-        <div id="footer-ad-content" style="display:flex; justify-content:center; align-items:flex-end; width:100%; height:100%; padding: 0 10px 2px 10px; overflow: hidden;">
+        <div id="footer-ad-content" style="display:flex; justify-content:center; align-items:center; width:100%; height:100%; padding: 0 10px; overflow: hidden;">
             <!-- 広告挿入エリア -->
         </div>
     </div>

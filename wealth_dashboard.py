@@ -759,7 +759,15 @@ with tabs[5]:
         # シェア用のサマリー作成
         normal_rep = all_res["通常"]
         status_msg = "✅100歳まで安泰" if not normal_rep['exhaustionAge'] else f"⚠️{normal_rep['exhaustionAge']}歳で枯渇"
-        share_text = f"【FIRE診断レポート】\n📊 最短FIRE年齢: {st.session_state.get('fire_age_val', age)}歳\n📋 通常シナリオ: {status_msg}\n💰 100歳時予想資産: {normal_rep['finalAssets']:,.0f}万円\n#資産形成の羅針盤"
+        
+        # 最短FIRE年齢が計算されているかどうかで文面を変える
+        rev = st.session_state.get('rev_results')
+        if rev and rev.get('通常'):
+            fire_info = f"📊 最短FIRE年齢: {rev['通常']}歳"
+        else:
+            fire_info = f"📅 設定FIRE年齢: {f_age}歳"
+
+        share_text = f"【FIREシミュレーション結果】\n{fire_info}\n📋 診断: {status_msg}\n💰 100歳時予想資産: {normal_rep['finalAssets']:,.0f}万円\n#資産形成の羅針盤"
         st.markdown(get_share_button_html(share_text), unsafe_allow_html=True)
         
         st.subheader("📋 シミュレーション診断レポート")

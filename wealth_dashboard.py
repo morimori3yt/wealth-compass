@@ -1162,13 +1162,13 @@ def render_footer_ad():
         ads_json = json.dumps(['<div style="color:#64748B; font-size:12px;">Wealth Compass Ad</div>'])
 
     # メインコンテンツの底上げ用CSS
-    st.markdown("<style>.stApp { margin-bottom: 140px; }</style>", unsafe_allow_html=True)
+    st.markdown("<style>.stApp { margin-bottom: 150px; }</style>", unsafe_allow_html=True)
 
     # 回転ロジックを含むHTML/JS
     footer_html = f"""
     <div id="footer-ad-root" style="
         position: fixed;
-        bottom: 0;
+        bottom: 40px; /* 画面最下部から40px浮かせる */
         left: 0;
         width: 100%;
         height: 100px;
@@ -1179,6 +1179,7 @@ def render_footer_ad():
         justify-content: center;
         align-items: center;
         border-top: 1px solid #e2e8f0;
+        border-bottom: 1px solid #e2e8f0;
         box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
     ">
         <style>
@@ -1224,7 +1225,7 @@ def render_footer_ad():
                 const frame = window.frameElement;
                 if (frame) {{
                     frame.style.position = 'fixed';
-                    frame.style.bottom = '0';
+                    frame.style.bottom = '40px'; /* 親のiframeも40px浮かせる */
                     frame.style.left = '0';
                     frame.style.width = '100%';
                     frame.style.height = '100px';

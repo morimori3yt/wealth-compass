@@ -768,7 +768,7 @@ with tabs[5]:
         else:
             fire_info = f"📅 設定FIRE年齢: {f_age}歳"
 
-        share_text = f"【FIREシミュレーション結果】\n{fire_info}\n📋 診断: {status_msg}\n💰 100歳時予想資産: {normal_rep['finalAssets']:,.0f}万円\n#資産形成の羅針盤"
+        share_text = f"【FIREシミュレーション結果】🚀\n{fire_info}\n📋 診断: {status_msg}\n💰 100歳時予想資産: {normal_rep['finalAssets']:,.0f}万円\n🔥 #資産形成の羅針盤 #FIRE"
         st.markdown(get_share_button_html(share_text), unsafe_allow_html=True)
         
         st.subheader("📋 シミュレーション診断レポート")
@@ -876,7 +876,7 @@ with tabs[4]:
     components.html(life_grid_html, height=950)
     
     # シェアボタン
-    st.markdown(get_share_button_html(f"【不労所得メーター】私の資産は1日に「{daily_income_yen:,.0f}円」、1年で「{annual_income_yen:,.0f}円」稼いでいます！"), unsafe_allow_html=True)
+    st.markdown(get_share_button_html(f"【不労所得メーター】💰 私の資産は1日に「{daily_income_yen:,.0f}円」、1年で「{annual_income_yen:,.0f}円」稼いでいます！ 🗓️✨ #配当金 #資産形成の羅針盤"), unsafe_allow_html=True)
 
 # --- Tab 3: 日本版 恐怖＆強欲メーター (CNN Fear & Greed Index 準拠) ---
 with tabs[2]:
@@ -1167,7 +1167,7 @@ with tabs[2]:
             </div>''', unsafe_allow_html=True)
     
     # シェアボタン
-    st.markdown(get_share_button_html(f"【日本版 Fear & Greed Index】現在の市場心理は「{fg_label}」({fg_score})です！投資家は今、{fg_label}に傾いています。"), unsafe_allow_html=True)
+    st.markdown(get_share_button_html(f"【日本版 Fear & Greed Index】📉📈 現在の市場心理は「{fg_label}」({fg_score})です！投資家は今、{fg_label}に傾いています。{fg_emoji} #資産形成の羅針盤 #投資家心理"), unsafe_allow_html=True)
 
 # --- Tab 7: 暴落プレイバック ストレステスト ---
 with tabs[6]:

@@ -1151,24 +1151,20 @@ with tabs[6]:
             st.success(f"底値で **{add_inv:,.0f}万円** を追加投資した場合、回復時点で **+{recovery_gain:,.0f}万円** の利益が見込めます（元本回復ベース）。")
         
 # --- 下部固定広告（オーバーレイ） ---
+# --- 下部固定広告（オーバーレイ） ---
 def render_footer_ad():
-    def get_overlay_ad():
-        default_ad = '<script src="https://adm.shinobi.jp/s/491908292e11c2a61985516e6624c50b"></script>'
-        try:
-            import random
-            df_ads = pd.read_csv('overlay_ads_list.csv')
-            if not df_ads.empty and 'html' in df_ads.columns:
-                return random.choice(df_ads['html'].dropna().values)
-            return default_ad
-        except:
-            return default_ad
-
-    selected_ad = get_overlay_ad()
+    # 広告リストをすべて読み込む
+    import json
+    try:
+        df_ads = pd.read_csv('overlay_ads_list.csv')
+        ads_json = json.dumps(df_ads['html'].dropna().tolist())
+    except:
+        ads_json = json.dumps(['<div style="color:#64748B; font-size:12px;">Wealth Compass Ad</div>'])
 
     # メインコンテンツの底上げ用CSS
     st.markdown("<style>.stApp { margin-bottom: 75px; }</style>", unsafe_allow_html=True)
 
-    # スタイリッシュな固定枠HTML
+    # 回転ロジックを含むHTML/JS
     footer_html = f"""
     <div id="footer-ad-root" style="
         position: fixed;
@@ -1185,27 +1181,61 @@ def render_footer_ad():
         border-top: 1px solid #e2e8f0;
         box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
     ">
-        <div style="display:flex; justify-content:center; align-items:center; width:100%; height:100%; padding: 0 10px;">
-            {selected_ad}
+        <style>
+            #footer-ad-content img, #footer-ad-content iframe {{
+                max-width: 100% !important;
+                height: auto !important;
+                object-fit: contain;
+            }}
+        </style>
+        <div id="footer-ad-content" style="display:flex; justify-content:center; align-items:center; width:100%; height:100%; padding: 0 10px; overflow: hidden;">
+            <!-- 広告挿入エリア -->
         </div>
     </div>
     <script>
-        try {{
-            const frame = window.frameElement;
-            if (frame) {{
-                frame.style.position = 'fixed';
-                frame.style.bottom = '0';
-                frame.style.left = '0';
-                frame.style.width = '100%';
-                frame.style.height = '65px';
-                frame.style.zIndex = '999999';
-                frame.style.pointerEvents = 'none';
+        (function() {{
+            const ads = {ads_json};
+            const contentDiv = document.getElementById('footer-ad-content');
+            
+            function rotateAd() {{
+                if (ads.length === 0) return;
+                const randomAd = ads[Math.floor(Math.random() * ads.length)];
+                contentDiv.innerHTML = randomAd;
+                
+                // scriptタグの強制再実行
+                Array.from(contentDiv.querySelectorAll("script")).forEach(oldScript => {{
+                    const newScript = document.createElement("script");
+                    Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
+                    newScript.appendChild(document.createTextNode(oldScript.innerHTML));
+                    oldScript.parentNode.replaceChild(newScript, oldScript);
+                }});
             }}
-            document.getElementById('footer-ad-root').style.pointerEvents = 'auto';
-        }} catch (e) {{ console.log(e); }}
+
+            rotateAd(); // 初期実行
+            setInterval(rotateAd, 10000); // 10秒タイマー
+
+            try {{
+                window.parent.document.addEventListener('click', rotateAd);
+            }} catch(e) {{
+                document.addEventListener('click', rotateAd);
+            }}
+
+            try {{
+                const frame = window.frameElement;
+                if (frame) {{
+                    frame.style.position = 'fixed';
+                    frame.style.bottom = '0';
+                    frame.style.left = '0';
+                    frame.style.width = '100%';
+                    frame.style.height = '65px';
+                    frame.style.zIndex = '999999';
+                    frame.style.pointerEvents = 'none';
+                }}
+                document.getElementById('footer-ad-root').style.pointerEvents = 'auto';
+            }} catch (e) {{ console.log(e); }}
+        }})();
     </script>
     """
-    
     components.html(footer_html, height=65)
 
 render_footer_ad()

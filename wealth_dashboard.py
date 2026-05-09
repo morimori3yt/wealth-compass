@@ -744,9 +744,6 @@ with tabs[5]:
             res = st.session_state['rev_results']
             st.markdown(f'<div class="rev-panel"><div style="font-weight:700; margin-bottom:8px; border-bottom:1px solid #475569; font-size:1.1rem;">最短FIRE可能年齢</div><div style="color:#10B981;">🚀 強気: <b>{res["強気"] if res["強気"] else "不可"}歳</b></div><div style="color:#3B82F6;">📊 通常: <b>{res["通常"] if res["通常"] else "不可"}歳</b></div><div style="color:#EF4444;">⚠️ 弱気: <b>{res["弱気"] if res["弱気"] else "不可"}歳</b></div></div>', unsafe_allow_html=True)
             if res['通常'] and st.button("通常結果を適用"): st.session_state['fire_age_val'] = res['通常']; st.rerun()
-            
-            # シェアボタン
-            st.markdown(get_share_button_html(f"【FIRE診断】私の最短FIRE可能年齢は「{res['通常']}歳」でした！"), unsafe_allow_html=True)
 
     with f_out:
         sim = FIRESimulator()
@@ -758,6 +755,13 @@ with tabs[5]:
             fig.add_trace(go.Scatter(x=df_h['age'], y=df_h['totalAssets'], name=n, line=dict(color=clrs[n], width=3), customdata=df_h['age'], hovertemplate="%{customdata}歳<br>資産: %{y:,.0f} 万円<extra></extra>"))
         fig.update_layout(title="将来資産推移", xaxis_title="年齢", yaxis_title="資産額 (万円)", template="plotly_white", hovermode="x unified", xaxis=dict(hoverformat=".0f歳"))
         st.plotly_chart(fig, use_container_width=True)
+        
+        # シェア用のサマリー作成
+        normal_rep = all_res["通常"]
+        status_msg = "✅100歳まで安泰" if not normal_rep['exhaustionAge'] else f"⚠️{normal_rep['exhaustionAge']}歳で枯渇"
+        share_text = f"【FIRE診断レポート】\n📊 最短FIRE年齢: {st.session_state.get('fire_age_val', age)}歳\n📋 通常シナリオ: {status_msg}\n💰 100歳時予想資産: {normal_rep['finalAssets']:,.0f}万円\n#資産形成の羅針盤"
+        st.markdown(get_share_button_html(share_text), unsafe_allow_html=True)
+        
         st.subheader("📋 シミュレーション診断レポート")
         rep_cols = st.columns(3)
         scen_css = {"通常": "fire-report-normal", "強気": "fire-report-bull", "弱気": "fire-report-bear"}

@@ -1122,8 +1122,20 @@ with tabs[2]:
             fig_chart.add_hrect(y0=80, y1=100, fillcolor="green", opacity=0.05, line_width=0, secondary_y=True)
             fig_chart.update_layout(
                 hovermode="x unified",
-                legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0.01, font=dict(size=11), bgcolor='rgba(0,0,0,0)', traceorder="normal", entrywidth=40, entrywidthmode="pixels"),
-                height=320, margin=dict(l=0, r=0, t=20, b=0), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+                legend=dict(
+                    orientation="h", 
+                    yanchor="top", y=-0.15, 
+                    xanchor="center", x=0.5,
+                    font=dict(size=9),
+                    bgcolor='rgba(0,0,0,0)',
+                    traceorder="normal",
+                    entrywidth=30,
+                    entrywidthmode="pixels"
+                ),
+                height=360,
+                margin=dict(l=0, r=0, t=10, b=60),
+                paper_bgcolor='rgba(0,0,0,0)',
+                plot_bgcolor='rgba(0,0,0,0)',
             )
             fig_chart.update_xaxes(showgrid=False)
             fig_chart.update_yaxes(title_text="株価騰落率 (%)", secondary_y=False, showgrid=True, gridcolor='#E2E8F0')

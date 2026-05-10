@@ -128,11 +128,11 @@ def render_market_tile(name, symbol):
     sign = "+" if is_up else ""
     fmt = ",.3f" if ("JPY" in symbol or "^TNX" in symbol or "^TYX" in symbol) else ",.2f"
     
-    # 枠（カード）の開始
+    # タイルとチャートを一つの枠で囲む
     st.markdown(f"""
-    <div class="m-tile">
+    <div class="m-tile" style="padding-bottom: 60px;">
         <div class="m-tile-accent" style="background-color: {chart_line};"></div>
-        <div class="m-tile-inner" style="margin-bottom: 8px;">
+        <div class="m-tile-inner">
             <div class="m-tile-left">
                 <div class="m-tile-name">{name}</div>
             </div>
@@ -144,7 +144,7 @@ def render_market_tile(name, symbol):
             </div>
         </div>
     </div>
-    <div style="margin-top: -65px;">
+    <div style="margin-top: -65px; margin-bottom: 10px;">
     """, unsafe_allow_html=True)
     
     # チャート描画
@@ -152,15 +152,26 @@ def render_market_tile(name, symbol):
     fill_rgba = f"rgba({int(h[0:2], 16)}, {int(h[2:4], 16)}, {int(h[4:6], 16)}, 0.15)"
     fig = go.Figure()
     fig.add_trace(go.Scatter(x=df_today.index, y=[prev]*len(df_today), mode='lines', line=dict(color='rgba(0,0,0,0)', width=0), hoverinfo='skip'))
-    fig.add_trace(go.Scatter(x=df_today.index, y=df_today['Close'], mode='lines', line=dict(color=chart_line, width=1.5), fill='tonexty', fillcolor=fill_rgba, hoverinfo='skip'))
-    fig.add_hline(y=prev, line_dash="dash", line_color="rgba(128,128,128,0.3)", line_width=1)
+    fig.add_trace(go.Scatter(x=df_today.index, y=df_today['Close'], mode='lines', line=dict(color=chart_line, width=2), fill='tonexty', fillcolor=fill_rgba, hoverinfo='skip'))
+    
+    # 基準線
+    fig.add_hline(y=prev, line_dash="dash", line_color="rgba(128,128,128,0.5)", line_width=1)
     
     min_y, max_y = min(df_today['Close'].min(), prev), max(df_today['Close'].max(), prev)
-    padding = (max_y - min_y) * 0.1 if max_y != min_y else curr * 0.001
+    padding = (max_y - min_y) * 0.2 if max_y != min_y else curr * 0.001
     
     fig.update_layout(
-        margin=dict(l=10, r=10, t=0, b=0), xaxis_visible=False, yaxis_visible=False,
-        yaxis=dict(range=[min_y - padding, max_y + padding]), height=45,
+        margin=dict(l=40, r=40, t=5, b=5), xaxis_visible=False, 
+        yaxis_visible=True,
+        yaxis=dict(
+            range=[min_y - padding, max_y + padding],
+            tickvals=[prev, curr],
+            ticktext=[f"前:{prev:{fmt}}", f"現:{curr:{fmt}}"],
+            tickfont=dict(size=8, color=theme_muted),
+            side="right",
+            showgrid=False
+        ), 
+        height=60,
         paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', showlegend=False, hovermode=False
     )
     st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
@@ -630,18 +641,17 @@ with tabs[0]:
         box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
     }}
 
-    /* 共通グラフ外枠 */
-    .chart-card {{
-        background-color: {theme_card};
+    /* 共通グラフ外枠 - Streamlitのコンテナ要素を直接ターゲット */
+    div[data-testid="stVerticalBlock"] > div:has(div.stPlotlyChart) {{
         border: 1px solid {theme_border};
         border-radius: 12px;
-        padding: 16px;
+        padding: 12px;
+        background-color: {theme_card};
         margin-bottom: 20px;
         box-shadow: 0 1px 3px rgba(0,0,0,0.05);
     }}
     .stPlotlyChart {{
-        border-radius: 8px;
-        overflow: hidden;
+        border: none !important;
     }}
     </style>
     """, unsafe_allow_html=True)

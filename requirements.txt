@@ -3,5 +3,5 @@ pandas
 plotly
 feedparser
 yfinance
-kaleido
+kaleido==0.1.0post1
 streamlit-sortables

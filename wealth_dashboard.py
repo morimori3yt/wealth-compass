@@ -1213,23 +1213,22 @@ with tabs[2]:
             
             st.markdown("##### 📈 センチメント vs 株価推移 (1年)")
             render_plotly_with_download(fig_chart, "Sentiment_History_Chart", height=320)
-                
-                st.markdown("""
-                <div style="display: flex; justify-content: center; align-items: center; gap: 16px; margin-top: 4px; padding-bottom: 8px; flex-wrap: nowrap;">
-                    <div style="display: flex; align-items: center; gap: 6px;">
-                        <div style="width: 14px; height: 3px; background-color: #3B82F6; border-radius: 1px;"></div>
-                        <span style="font-size: 11px; font-weight: 600; color: #64748B; white-space: nowrap;">日経平均</span>
-                    </div>
-                    <div style="display: flex; align-items: center; gap: 6px;">
-                        <div style="width: 14px; height: 0px; border-top: 2px dotted #94A3B8;"></div>
-                        <span style="font-size: 11px; font-weight: 600; color: #64748B; white-space: nowrap;">TOPIX</span>
-                    </div>
-                    <div style="display: flex; align-items: center; gap: 6px;">
-                        <div style="width: 14px; height: 3px; background-color: #F59E0B; border-radius: 1px;"></div>
-                        <span style="font-size: 11px; font-weight: 600; color: #64748B; white-space: nowrap;">F&G</span>
-                    </div>
+            st.markdown("""
+            <div style="display: flex; justify-content: center; align-items: center; gap: 16px; margin-top: 4px; padding-bottom: 8px; flex-wrap: nowrap;">
+                <div style="display: flex; align-items: center; gap: 6px;">
+                    <div style="width: 14px; height: 3px; background-color: #3B82F6; border-radius: 1px;"></div>
+                    <span style="font-size: 11px; font-weight: 600; color: #64748B; white-space: nowrap;">日経平均</span>
                 </div>
-                """, unsafe_allow_html=True)
+                <div style="display: flex; align-items: center; gap: 6px;">
+                    <div style="width: 14px; height: 0px; border-top: 2px dotted #94A3B8;"></div>
+                    <span style="font-size: 11px; font-weight: 600; color: #64748B; white-space: nowrap;">TOPIX</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 6px;">
+                    <div style="width: 14px; height: 3px; background-color: #F59E0B; border-radius: 1px;"></div>
+                    <span style="font-size: 11px; font-weight: 600; color: #64748B; white-space: nowrap;">F&G</span>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
                 
     st.markdown("#### 📊 構成指標の内訳（CNN準拠・各 14.3% の均等加重）")
     indicator_names = {

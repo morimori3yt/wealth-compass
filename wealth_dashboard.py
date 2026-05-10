@@ -150,7 +150,14 @@ def render_market_tile(name, symbol):
         fill_rgba = f"rgba({int(h[0:2], 16)}, {int(h[2:4], 16)}, {int(h[4:6], 16)}, 0.15)"
         fig = go.Figure()
         fig.add_trace(go.Scatter(x=df_today.index, y=[prev]*len(df_today), mode='lines', line=dict(color='rgba(0,0,0,0)', width=0), hoverinfo='skip'))
-        fig.add_trace(go.Scatter(x=df_today.index, y=df_today['Close'], mode='lines', line=dict(color=chart_line, width=2.5), fill='tonexty', fillcolor=fill_rgba, hoverinfo='skip'))
+        fig.add_trace(go.Scatter(
+            x=df_today.index, y=df_today['Close'], 
+            mode='lines', 
+            line=dict(color=chart_line, width=2.5), 
+            fill='tonexty', 
+            fillcolor=fill_rgba, 
+            hovertemplate=f'価格: %{{y:{fmt}}}<extra></extra>'
+        ))
         
         fig.add_hline(y=prev, line_dash="dash", line_color="rgba(128,128,128,0.5)", line_width=1)
         

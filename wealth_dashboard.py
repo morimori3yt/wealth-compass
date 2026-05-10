@@ -456,14 +456,22 @@ def render_rotating_ads():
             padding-top: 0.3rem !important;
             padding-bottom: 100px !important;
         }}
-        .main-title {{
-            font-size: clamp(1.5rem, 6.5vw, 2.8rem);
-            font-weight: 800;
+        .logo-container {{
             text-align: center;
-            margin-bottom: 0.2rem;
-            color: #1E293B;
-            white-space: nowrap;
-            font-family: 'Inter', 'Noto Sans JP', sans-serif;
+            margin-bottom: 0.5rem;
+            padding: 0 10px;
+        }}
+        .logo-container img {{
+            max-width: 100%;
+            height: auto;
+            max-height: 120px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }}
+        @media (max-width: 768px) {{
+            .logo-container img {{
+                max-height: 80px;
+            }}
         }}
         .ad-disclosure {{
             font-size: 0.75rem;
@@ -480,7 +488,9 @@ def render_rotating_ads():
         div[data-testid="stStatusWidget"] {{display:none;}}
         #viewer-link {{display:none;}}
         </style>
-        <div class="main-title">🧭 資産形成の羅針盤</div>
+        <div class="logo-container">
+            <img src="https://raw.githubusercontent.com/morimori3yt/wealth-compass/main/wealth_logo.jpg" alt="資産形成の羅針盤">
+        </div>
         <div class="ad-disclosure">※本ページはプロモーション（アフィリエイト広告）が含まれています</div>
         """, unsafe_allow_html=True)
     

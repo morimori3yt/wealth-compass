@@ -69,15 +69,43 @@ def render_plotly_with_download(fig, filename, height=400, inside_content=""):
         </button>
         
         <script>
-            document.getElementById('dl-btn').onclick = function() {{
+            document.getElementById('dl-btn').onclick = async function() {{
                 const gd = document.querySelector('.plotly-graph-div');
-                Plotly.downloadImage(gd, {{
+                
+                // 画像データを生成
+                const dataUrl = await Plotly.toImage(gd, {{
                     format: 'jpeg',
-                    filename: '{filename}',
                     height: 800,
                     width: 1200,
                     scale: 2
                 }});
+
+                // スマホの共有機能 (Web Share API) が使える場合
+                if (navigator.share && navigator.canShare) {{
+                    try {{
+                        const blob = await (await fetch(dataUrl)).blob();
+                        const file = new File([blob], '{filename}.jpg', {{ type: 'image/jpeg' }});
+                        
+                        if (navigator.canShare({{ files: [file] }})) {{
+                            await navigator.share({{
+                                files: [file],
+                                title: 'グラフを保存',
+                                text: 'Wealth Compass グラフ画像'
+                            }});
+                            return; // 共有が成功したら終了
+                        }}
+                    }} catch (err) {{
+                        console.error('Share failed:', err);
+                    }}
+                }}
+
+                // PCまたは共有不可の場合は通常のダウンロードを実行
+                const link = document.createElement('a');
+                link.href = dataUrl;
+                link.download = '{filename}.jpg';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
             }};
             document.getElementById('dl-btn').onmouseover = function() {{ 
                 this.style.backgroundColor = '#f9fafb'; 
@@ -114,8 +142,8 @@ ASSET_MASTER = {
     "日経平均": "^N225", "TOPIX": "^TPX", "マザーズ": "250.T", 
     "上海総合": "000001.SS", "香港ハンセン": "^HSI", "台湾加権": "^TWII", "インドSensex": "^BSESN",
     # 株式指数 (米国・欧州・グローバル)
-    "NYダウ": "^DJI", "S&P 500": "^GSPC", "ナスダック": "^IXIC", "NASDAQ 100": "^NDX", "SOX指数": "^SOX", "FANG+": "FNGS", "ラッセル2000": "^RUT", "VIX恐怖指数": "^VIX",
-    "オルカン (ACWI)": "ACWI",
+    "NYダウ": "^DJI", "S&P500": "^GSPC", "ナスダック": "^IXIC", "NASDAQ100": "^NDX", "SOX指数": "^SOX", "FANG+": "FNGS", "ラッセル2000": "^RUT", "VIX恐怖指数": "^VIX",
+    "オルカン": "ACWI",
     "DAX (独)": "^GDAXI", "FTSE (英)": "^FTSE", "CAC (仏)": "^FCHI", "SMI (瑞)": "^SSMI",
     # 為替
     "ドル円": "JPY=X", "ユーロ円": "EURJPY=X", "ポンド円": "GBPJPY=X", "豪ドル円": "AUDJPY=X", 
@@ -130,8 +158,8 @@ ASSET_MASTER = {
 }
 
 default_assets = [
-    "日経平均", "TOPIX", "NYダウ", "S&P 500", "オルカン (ACWI)", "SOX指数", "ドル円", "ビットコイン",
-    "NASDAQ 100", "FANG+", "VIX恐怖指数", "ユーロ円", "金先物", "WTI原油", "米10年債利回り", "上海総合"
+    "オルカン", "S&P500", "NASDAQ100", "FANG+", "SOX指数", "ドル円", 
+    "日経平均", "TOPIX", "VIX恐怖指数", "米10年債利回り", "金先物", "ビットコイン"
 ]
 
 # --- 共通ユーティリティ ---
@@ -508,16 +536,14 @@ with tabs[0]:
         except Exception as e:
             ordered_assets = selected_assets_base
             
-        bg_mode = st.radio("背景色設定", ["明るい (白)", "暗い (黒)"], horizontal=True)
         color_pattern = st.radio("騰落カラー設定", ["日本式 (上昇:赤 / 下落:緑)", "欧米式 (上昇:緑 / 下落:赤)"], horizontal=True)
 
-    # カラーコード定義
-    is_dark = bg_mode == "暗い (黒)"
-    theme_bg = "#0f172a" if is_dark else "#f8fafc"
-    theme_card = "#1e293b" if is_dark else "#ffffff"
-    theme_text = "#f1f5f9" if is_dark else "#1e293b"
-    theme_border = "#334155" if is_dark else "#e2e8f0"
-    theme_muted = "#94a3b8" if is_dark else "#64748b"
+    # カラーコード定義 (常に明るいテーマに固定)
+    theme_bg = "#f8fafc"
+    theme_card = "#ffffff"
+    theme_text = "#1e293b"
+    theme_border = "#e2e8f0"
+    theme_muted = "#64748b"
 
     # カスタムCSSインジェクション（全タブ統一プレミアムUI）
     st.markdown(f"""

@@ -75,11 +75,15 @@ def render_plotly_with_download(fig, filename, height=400, inside_content=""):
                     format: 'jpeg',
                     height: 800,
                     width: 1200,
-                    scale: 2
+                    scale: 2,
+                    backgroundColor: '#ffffff' // 保存時の背景を白に固定
                 }});
 
-                // スマホの共有機能 (Web Share API) が使える場合
-                if (navigator.share && navigator.canShare) {{
+                // モバイル端末（iPhone/Android等）の判定
+                const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+                
+                // モバイルかつ共有機能が使える場合のみWeb Share APIを使用
+                if (isMobile && navigator.share && navigator.canShare) {{
                     try {{
                         const blob = await (await fetch(dataUrl)).blob();
                         const file = new File([blob], '{filename}.jpg', {{ type: 'image/jpeg' }});
@@ -90,14 +94,14 @@ def render_plotly_with_download(fig, filename, height=400, inside_content=""):
                                 title: 'グラフを保存',
                                 text: 'Wealth Compass グラフ画像'
                             }});
-                            return; // 共有が成功したら終了
+                            return; 
                         }}
                     }} catch (err) {{
                         console.error('Share failed:', err);
                     }}
                 }}
 
-                // PCまたは共有不可の場合は通常のダウンロードを実行
+                // PCまたは共有不可の場合は直接ダウンロードを実行
                 const link = document.createElement('a');
                 link.href = dataUrl;
                 link.download = '{filename}.jpg';

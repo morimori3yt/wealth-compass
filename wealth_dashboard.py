@@ -895,16 +895,16 @@ with tabs[5]:
             hovermode="x unified", 
             xaxis=dict(hoverformat=".0f歳"),
             legend=dict(
-                orientation="v",
-                yanchor="top",
-                y=0.99,
-                xanchor="left",
-                x=1.02,
-                bgcolor='rgba(255,255,255,0.9)',
-                bordercolor='#d1d5db',
-                borderwidth=1
+                orientation="h",
+                yanchor="bottom",
+                y=1.02,
+                xanchor="right",
+                x=1,
+                bgcolor='rgba(255,255,255,0)',
+                bordercolor='rgba(0,0,0,0)',
+                borderwidth=0
             ),
-            margin=dict(l=60, r=100, t=60, b=50)
+            margin=dict(l=60, r=40, t=80, b=50)
         )
         render_plotly_with_download(fig, "FIRE_Simulation_Results", height=420)
         

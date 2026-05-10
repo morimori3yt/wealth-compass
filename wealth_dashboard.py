@@ -1122,27 +1122,36 @@ with tabs[2]:
             fig_chart.add_hrect(y0=80, y1=100, fillcolor="green", opacity=0.05, line_width=0, secondary_y=True)
             fig_chart.update_layout(
                 hovermode="x unified",
-                legend=dict(
-                    orientation="h", 
-                    yanchor="top", y=-0.15, 
-                    xanchor="center", x=0.5,
-                    font=dict(size=9),
-                    bgcolor='rgba(0,0,0,0)',
-                    traceorder="normal",
-                    entrywidth=30,
-                    entrywidthmode="pixels"
-                ),
-                height=360,
-                margin=dict(l=0, r=0, t=10, b=60),
+                showlegend=False,
+                height=320,
+                margin=dict(l=0, r=0, t=10, b=10),
                 paper_bgcolor='rgba(0,0,0,0)',
                 plot_bgcolor='rgba(0,0,0,0)',
             )
             fig_chart.update_xaxes(showgrid=False)
             fig_chart.update_yaxes(title_text="株価騰落率 (%)", secondary_y=False, showgrid=True, gridcolor='#E2E8F0')
             fig_chart.update_yaxes(title_text="F&G Index", secondary_y=True, range=[0, 100], showgrid=False)
+            
             with st.container(border=True):
                 st.markdown("##### 📈 センチメント vs 株価推移 (1年)")
                 st.plotly_chart(fig_chart, use_container_width=True, config={'displayModeBar': False})
+                
+                st.markdown("""
+                <div style="display: flex; justify-content: center; align-items: center; gap: 16px; margin-top: 4px; padding-bottom: 8px; flex-wrap: nowrap;">
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        <div style="width: 14px; height: 3px; background-color: #3B82F6; border-radius: 1px;"></div>
+                        <span style="font-size: 11px; font-weight: 600; color: #64748B; white-space: nowrap;">日経平均</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        <div style="width: 14px; height: 0px; border-top: 2px dotted #94A3B8;"></div>
+                        <span style="font-size: 11px; font-weight: 600; color: #64748B; white-space: nowrap;">TOPIX</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        <div style="width: 12px; height: 12px; background-color: rgba(245, 158, 11, 0.15); border: 1.5px solid #F59E0B; border-radius: 3px;"></div>
+                        <span style="font-size: 11px; font-weight: 600; color: #64748B; white-space: nowrap;">F&G</span>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
     st.markdown("#### 📊 構成指標の内訳（CNN準拠・各 14.3% の均等加重）")
     indicator_names = {
         'MOMENTUM': '① 株価モメンタム', 'STRENGTH': '② 株価の強さ', 'BREADTH': '③ 市場の広がり',

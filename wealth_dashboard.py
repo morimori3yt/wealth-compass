@@ -8,6 +8,21 @@ import plotly.graph_objects as go
 import yfinance as yf
 from simulation_logic import FIRESimulator
 import datetime
+import kaleido # 画像出力用
+
+# グラフダウンロード用ヘルパー関数
+def render_download_button(fig, filename):
+    try:
+        img_bytes = fig.to_image(format="jpg", scale=2)
+        st.download_button(
+            label="📸 グラフを画像で保存 (JPEG)",
+            data=img_bytes,
+            file_name=f"{filename}_{datetime.datetime.now().strftime('%Y%m%d')}.jpg",
+            mime="image/jpeg",
+            use_container_width=True
+        )
+    except Exception as e:
+        st.error(f"画像の生成に失敗しました: {e}")
 from dateutil import parser
 import time
 
@@ -786,6 +801,7 @@ with tabs[5]:
         fig.update_layout(title="将来資産推移", xaxis_title="年齢", yaxis_title="資産額 (万円)", template="plotly_white", hovermode="x unified", xaxis=dict(hoverformat=".0f歳"))
         with st.container(border=True):
             st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+            render_download_button(fig, "FIRE_simulation")
         
         # シェア用のサマリー作成
         normal_rep = all_res["通常"]
@@ -1105,6 +1121,7 @@ with tabs[2]:
         with st.container(border=True):
             st.plotly_chart(fig_fg, use_container_width=True, config={'displayModeBar': False})
             st.markdown(f'<div style="text-align:center; font-size:1.5rem; font-weight:700; color:{fg_color}; margin-top:-20px; margin-bottom:10px;">{fg_emoji} {fg_label}</div>', unsafe_allow_html=True)
+            render_download_button(fig_fg, "Sentiment_Gauge")
     
     with c2:
         df_hist = calc_fear_greed_history()
@@ -1152,6 +1169,7 @@ with tabs[2]:
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
+                render_download_button(fig_chart, "Sentiment_History")
     st.markdown("#### 📊 構成指標の内訳（CNN準拠・各 14.3% の均等加重）")
     indicator_names = {
         'MOMENTUM': '① 株価モメンタム', 'STRENGTH': '② 株価の強さ', 'BREADTH': '③ 市場の広がり',
@@ -1273,6 +1291,7 @@ with tabs[6]:
         )
         with st.container(border=True):
             st.plotly_chart(fig_crash, use_container_width=True, config={'displayModeBar': False})
+            render_download_button(fig_crash, "Crash_Test_Simulation")
         
         max_loss = tp - min_val
         max_loss_pct = (max_loss / tp) * 100 if tp > 0 else 0

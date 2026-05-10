@@ -347,6 +347,14 @@ def render_rotating_ads():
     ads_json = json.dumps(ad_list)
     
     ad_html = f"""
+    <!-- Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){{dataLayer.push(arguments);}}
+        gtag('js', new Date());
+        gtag('config', 'G-XXXXXXXXXX');
+    </script>
     <style>
         #ad-container {{
             text-align: center;
@@ -457,25 +465,6 @@ def render_rotating_ads():
         div[data-testid="stStatusWidget"] {{display:none;}}
         #viewer-link {{display:none;}}
         </style>
-
-        <!-- SEO Meta Tags -->
-        <head>
-            <meta name="description" content="資産形成の羅針盤：日本版 Fear & Greed Index、FIREシミュレーター、不労所得メーターなど、投資家を導く無料ツール集。">
-            <meta name="keywords" content="FIRE, シミュレーター, 恐怖指数, 資産形成, 投資, 日本版 Fear and Greed Index">
-            <meta property="og:title" content="資産形成の羅針盤 | 投資家を導く無料ツール集">
-            <meta property="og:description" content="日本版 Fear & Greed Index や FIREシミュレーターなど、資産形成を支援する無料ツール群。">
-            <meta property="og:image" content="https://raw.githubusercontent.com/morimori3yt/wealth-compass/main/wealth_logo.jpg">
-            <meta property="og:type" content="website">
-            
-            <!-- Google Analytics (Placeholder: Replace G-XXXXXXXXXX with your actual ID) -->
-            <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
-            <script>
-                window.dataLayer = window.dataLayer || [];
-                function gtag(){{dataLayer.push(arguments);}}
-                gtag('js', new Date());
-                gtag('config', 'G-XXXXXXXXXX');
-            </script>
-        </head>
 
         <div class="logo-container">
             <img src="https://raw.githubusercontent.com/morimori3yt/wealth-compass/main/wealth_logo.jpg" alt="資産形成の羅針盤">
@@ -906,16 +895,16 @@ with tabs[5]:
             hovermode="x unified", 
             xaxis=dict(hoverformat=".0f歳"),
             legend=dict(
-                orientation="v",
-                yanchor="top",
-                y=0.98,
-                xanchor="right",
-                x=0.98,
+                orientation="h",
+                yanchor="bottom",
+                y=-0.3,
+                xanchor="center",
+                x=0.5,
                 bgcolor='rgba(255,255,255,0.7)',
                 bordercolor='#d1d5db',
                 borderwidth=1
             ),
-            margin=dict(l=60, r=30, t=40, b=50)
+            margin=dict(l=60, r=30, t=40, b=80)
         )
         render_plotly_with_download(fig, "FIRE_Simulation_Results", height=420)
         

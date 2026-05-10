@@ -130,9 +130,9 @@ def render_market_tile(name, symbol):
     
     # タイルとチャートを一つの枠で囲む
     st.markdown(f"""
-    <div class="m-tile" style="padding-bottom: 60px;">
+    <div class="m-tile">
         <div class="m-tile-accent" style="background-color: {chart_line};"></div>
-        <div class="m-tile-inner">
+        <div class="m-tile-inner" style="margin-bottom: 12px;">
             <div class="m-tile-left">
                 <div class="m-tile-name">{name}</div>
             </div>
@@ -144,38 +144,37 @@ def render_market_tile(name, symbol):
             </div>
         </div>
     </div>
-    <div style="margin-top: -65px; margin-bottom: 10px;">
     """, unsafe_allow_html=True)
     
-    # チャート描画
+    # チャート描画 (高さを拡大)
     h = chart_line.lstrip('#')
     fill_rgba = f"rgba({int(h[0:2], 16)}, {int(h[2:4], 16)}, {int(h[4:6], 16)}, 0.15)"
     fig = go.Figure()
     fig.add_trace(go.Scatter(x=df_today.index, y=[prev]*len(df_today), mode='lines', line=dict(color='rgba(0,0,0,0)', width=0), hoverinfo='skip'))
-    fig.add_trace(go.Scatter(x=df_today.index, y=df_today['Close'], mode='lines', line=dict(color=chart_line, width=2), fill='tonexty', fillcolor=fill_rgba, hoverinfo='skip'))
+    fig.add_trace(go.Scatter(x=df_today.index, y=df_today['Close'], mode='lines', line=dict(color=chart_line, width=2.5), fill='tonexty', fillcolor=fill_rgba, hoverinfo='skip'))
     
     # 基準線
     fig.add_hline(y=prev, line_dash="dash", line_color="rgba(128,128,128,0.5)", line_width=1)
     
     min_y, max_y = min(df_today['Close'].min(), prev), max(df_today['Close'].max(), prev)
-    padding = (max_y - min_y) * 0.2 if max_y != min_y else curr * 0.001
+    padding = (max_y - min_y) * 0.25 if max_y != min_y else curr * 0.001
     
     fig.update_layout(
-        margin=dict(l=40, r=40, t=5, b=5), xaxis_visible=False, 
+        margin=dict(l=40, r=40, t=10, b=10), xaxis_visible=False, 
         yaxis_visible=True,
         yaxis=dict(
             range=[min_y - padding, max_y + padding],
             tickvals=[prev, curr],
             ticktext=[f"前:{prev:{fmt}}", f"現:{curr:{fmt}}"],
-            tickfont=dict(size=8, color=theme_muted),
+            tickfont=dict(size=9, color=theme_muted),
             side="right",
-            showgrid=False
+            showgrid=True,
+            gridcolor='rgba(128,128,128,0.1)'
         ), 
-        height=60,
+        height=150, # 縦を大幅に拡大
         paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', showlegend=False, hovermode=False
     )
     st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-    st.markdown("</div>", unsafe_allow_html=True)
 
 
 def get_relative_time(published_str):
@@ -642,13 +641,14 @@ with tabs[0]:
     }}
 
     /* 共通グラフ外枠 - Streamlitのコンテナ要素を直接ターゲット */
-    div[data-testid="stVerticalBlock"] > div:has(div.stPlotlyChart) {{
-        border: 1px solid {theme_border};
-        border-radius: 12px;
-        padding: 12px;
-        background-color: {theme_card};
-        margin-bottom: 20px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    div[data-testid="stVerticalBlock"] > div:has(div.stPlotlyChart),
+    div[data-testid="stVerticalBlock"] > div[data-testid="stVerticalBlockBorderWrapper"] {{
+        border: 1px solid {theme_border} !important;
+        border-radius: 12px !important;
+        padding: 16px !important;
+        background-color: {theme_card} !important;
+        margin-bottom: 20px !important;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05) !important;
     }}
     .stPlotlyChart {{
         border: none !important;
@@ -766,9 +766,8 @@ with tabs[5]:
             df_h = pd.DataFrame(all_res[n]['history'])
             fig.add_trace(go.Scatter(x=df_h['age'], y=df_h['totalAssets'], name=n, line=dict(color=clrs[n], width=3), customdata=df_h['age'], hovertemplate="%{customdata}歳<br>資産: %{y:,.0f} 万円<extra></extra>"))
         fig.update_layout(title="将来資産推移", xaxis_title="年齢", yaxis_title="資産額 (万円)", template="plotly_white", hovermode="x unified", xaxis=dict(hoverformat=".0f歳"))
-        st.markdown('<div class="chart-card">', unsafe_allow_html=True)
-        st.plotly_chart(fig, use_container_width=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+        with st.container(border=True):
+            st.plotly_chart(fig, use_container_width=True)
         
         # シェア用のサマリー作成
         normal_rep = all_res["通常"]
@@ -1106,10 +1105,9 @@ with tabs[2]:
     
     col1, col2 = st.columns([1, 2])
     with col1:
-        st.markdown('<div class="chart-card">', unsafe_allow_html=True)
-        st.plotly_chart(fig_fg, use_container_width=True)
-        st.markdown(f'<div style="text-align:center; font-size:1.5rem; font-weight:700; color:{fg_color}; margin-top:-20px; margin-bottom:10px;">{fg_emoji} {fg_label}</div>', unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+        with st.container(border=True):
+            st.plotly_chart(fig_fg, use_container_width=True)
+            st.markdown(f'<div style="text-align:center; font-size:1.5rem; font-weight:700; color:{fg_color}; margin-top:-20px; margin-bottom:10px;">{fg_emoji} {fg_label}</div>', unsafe_allow_html=True)
     
     with col2:
         df_hist = calc_fear_greed_history()
@@ -1150,9 +1148,8 @@ with tabs[2]:
             fig_chart.update_yaxes(title_text="株価騰落率 (%)", secondary_y=False, showgrid=True, gridcolor='#E2E8F0')
             fig_chart.update_yaxes(title_text="F&G Index", secondary_y=True, range=[0, 100], showgrid=False)
             
-            st.markdown('<div class="chart-card">', unsafe_allow_html=True)
-            st.plotly_chart(fig_chart, use_container_width=True)
-            st.markdown('</div>', unsafe_allow_html=True)
+            with st.container(border=True):
+                st.plotly_chart(fig_chart, use_container_width=True)
 
     # 構成指標ミニカード（7指標・CNN準拠）
     st.markdown("#### 📊 構成指標の内訳（CNN準拠・各 14.3% の均等加重）")
@@ -1273,9 +1270,8 @@ with tabs[6]:
             xaxis_title="経過期間", yaxis_title="資産額 (万円)",
             template="plotly_white", showlegend=False, height=400
         )
-        st.markdown('<div class="chart-card">', unsafe_allow_html=True)
-        st.plotly_chart(fig_crash, use_container_width=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+        with st.container(border=True):
+            st.plotly_chart(fig_crash, use_container_width=True)
         
         max_loss = tp - min_val
         max_loss_pct = (max_loss / tp) * 100 if tp > 0 else 0

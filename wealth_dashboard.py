@@ -170,7 +170,8 @@ def render_market_tile(name, symbol):
                 gridcolor='rgba(128,128,128,0.1)'
             ), 
             height=150,
-            paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', showlegend=False, hovermode=False
+            paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', showlegend=False, 
+            hovermode="x unified"
         )
         st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
 
@@ -1267,7 +1268,8 @@ with tabs[6]:
         fig_crash.update_layout(
             title=f"📉 {cr['selected_crash']} シミュレーション結果",
             xaxis_title="経過期間", yaxis_title="資産額 (万円)",
-            template="plotly_white", showlegend=False, height=400
+            template="plotly_white", showlegend=False, height=400,
+            hovermode="x unified"
         )
         with st.container(border=True):
             st.plotly_chart(fig_crash, use_container_width=True)

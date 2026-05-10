@@ -128,53 +128,51 @@ def render_market_tile(name, symbol):
     sign = "+" if is_up else ""
     fmt = ",.3f" if ("JPY" in symbol or "^TNX" in symbol or "^TYX" in symbol) else ",.2f"
     
-    # タイルとチャートを一つの枠で囲む
-    st.markdown(f"""
-    <div class="m-tile">
-        <div class="m-tile-accent" style="background-color: {chart_line};"></div>
-        <div class="m-tile-inner" style="margin-bottom: 12px;">
-            <div class="m-tile-left">
-                <div class="m-tile-name">{name}</div>
+    with st.container(border=True):
+        # 銘柄情報
+        st.markdown(f"""
+        <div style="display: flex; justify-content: space-between; align-items: flex-end; width: 100%; margin-bottom: 8px; position: relative; padding-left: 12px;">
+            <div style="position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background-color: {chart_line}; border-radius: 2px;"></div>
+            <div style="text-align: left;">
+                <div style="font-size: 0.9rem; font-weight: 600; color: {theme_text}; margin-bottom: 2px;">{name}</div>
+                <div style="font-family: 'Inter', sans-serif; font-size: 1.35rem; font-weight: 700; color: {theme_text}; letter-spacing: -0.5px;">{curr:{fmt}}</div>
             </div>
-            <div class="m-tile-right">
-                <div class="m-tile-price">{curr:{fmt}}</div>
-                <div class="m-tile-badge" style="background-color: {badge_bg}; color: {chart_line};">
+            <div style="text-align: right;">
+                <div style="font-family: 'Inter', sans-serif; font-size: 0.85rem; font-weight: 600; padding: 2px 8px; border-radius: 6px; background-color: {badge_bg}; color: {chart_line};">
                     {sign}{diff:{fmt}} ({sign}{pct:.2f}%)
                 </div>
             </div>
         </div>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    # チャート描画 (高さを拡大)
-    h = chart_line.lstrip('#')
-    fill_rgba = f"rgba({int(h[0:2], 16)}, {int(h[2:4], 16)}, {int(h[4:6], 16)}, 0.15)"
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(x=df_today.index, y=[prev]*len(df_today), mode='lines', line=dict(color='rgba(0,0,0,0)', width=0), hoverinfo='skip'))
-    fig.add_trace(go.Scatter(x=df_today.index, y=df_today['Close'], mode='lines', line=dict(color=chart_line, width=2.5), fill='tonexty', fillcolor=fill_rgba, hoverinfo='skip'))
-    
-    # 基準線
-    fig.add_hline(y=prev, line_dash="dash", line_color="rgba(128,128,128,0.5)", line_width=1)
-    
-    min_y, max_y = min(df_today['Close'].min(), prev), max(df_today['Close'].max(), prev)
-    padding = (max_y - min_y) * 0.25 if max_y != min_y else curr * 0.001
-    
-    fig.update_layout(
-        margin=dict(l=40, r=40, t=10, b=10), xaxis_visible=False, 
-        yaxis_visible=True,
-        yaxis=dict(
-            range=[min_y - padding, max_y + padding],
-            tickvals=[prev, curr],
-            ticktext=[f"前:{prev:{fmt}}", f"現:{curr:{fmt}}"],
-            tickfont=dict(size=9, color=theme_muted),
-            side="right",
-            showgrid=True,
-            gridcolor='rgba(128,128,128,0.1)'
-        ), 
-        height=150, # 縦を大幅に拡大
-        paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', showlegend=False, hovermode=False
-    )
-    st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+        """, unsafe_allow_html=True)
+        
+        # チャート描画
+        h = chart_line.lstrip('#')
+        fill_rgba = f"rgba({int(h[0:2], 16)}, {int(h[2:4], 16)}, {int(h[4:6], 16)}, 0.15)"
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=df_today.index, y=[prev]*len(df_today), mode='lines', line=dict(color='rgba(0,0,0,0)', width=0), hoverinfo='skip'))
+        fig.add_trace(go.Scatter(x=df_today.index, y=df_today['Close'], mode='lines', line=dict(color=chart_line, width=2.5), fill='tonexty', fillcolor=fill_rgba, hoverinfo='skip'))
+        
+        fig.add_hline(y=prev, line_dash="dash", line_color="rgba(128,128,128,0.5)", line_width=1)
+        
+        min_y, max_y = min(df_today['Close'].min(), prev), max(df_today['Close'].max(), prev)
+        padding = (max_y - min_y) * 0.25 if max_y != min_y else curr * 0.001
+        
+        fig.update_layout(
+            margin=dict(l=5, r=40, t=5, b=5), xaxis_visible=False, 
+            yaxis_visible=True,
+            yaxis=dict(
+                range=[min_y - padding, max_y + padding],
+                tickvals=[prev, curr],
+                ticktext=[f"前:{prev:{fmt}}", f"現:{curr:{fmt}}"],
+                tickfont=dict(size=9, color=theme_muted),
+                side="right",
+                showgrid=True,
+                gridcolor='rgba(128,128,128,0.1)'
+            ), 
+            height=150,
+            paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', showlegend=False, hovermode=False
+        )
+        st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
 
 
 def get_relative_time(published_str):
@@ -640,9 +638,8 @@ with tabs[0]:
         box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
     }}
 
-    /* 共通グラフ外枠 - Streamlitのコンテナ要素を直接ターゲット */
-    div[data-testid="stVerticalBlock"] > div:has(div.stPlotlyChart),
-    div[data-testid="stVerticalBlock"] > div[data-testid="stVerticalBlockBorderWrapper"] {{
+    /* 共通グラフ外枠 - 二重枠を防止するため、Streamlit標準の枠線コンテナのみをターゲット */
+    div[data-testid="stVerticalBlockBorderWrapper"] {{
         border: 1px solid {theme_border} !important;
         border-radius: 12px !important;
         padding: 16px !important;
@@ -650,8 +647,10 @@ with tabs[0]:
         margin-bottom: 20px !important;
         box-shadow: 0 1px 3px rgba(0,0,0,0.05) !important;
     }}
+    /* Plotly自体の余計な枠や背景を消去 */
     .stPlotlyChart {{
         border: none !important;
+        background-color: transparent !important;
     }}
     </style>
     """, unsafe_allow_html=True)

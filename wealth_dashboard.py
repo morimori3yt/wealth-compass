@@ -8,15 +8,12 @@ import plotly.graph_objects as go
 import yfinance as yf
 from simulation_logic import FIRESimulator
 import datetime
+import streamlit.components.v1 as components
 
 # グラフ保存用設定 (ブラウザ側でJPEG生成)
 CHART_CONFIG_JPEG = {
-    'displayModeBar': True,
+    'displayModeBar': False, # 右上のボタンは完全に消す
     'displaylogo': False,
-    'modeBarButtonsToRemove': [
-        'zoom2d', 'pan2d', 'select2d', 'lasso2d', 'zoomIn2d', 'zoomOut2d', 
-        'autoScale2d', 'resetScale2d', 'hoverClosestCartesian', 'hoverCompareCartesian', 'toggleSpikelines'
-    ],
     'toImageButtonOptions': {
         'format': 'jpeg',
         'filename': 'wealth_compass_chart',
@@ -25,6 +22,54 @@ CHART_CONFIG_JPEG = {
         'scale': 1.5
     }
 }
+
+# ブラウザ側でダウンロードを実行するカスタム描画関数
+def render_plotly_with_download(fig, filename, height=400):
+    import plotly.io as pio
+    # PlotlyのHTMLを生成 (Plotly.jsはCDNから取得)
+    fig_html = pio.to_html(fig, include_plotlyjs='cdn', full_html=False, config=CHART_CONFIG_JPEG)
+    
+    # 独自のボタンとJavaScriptを組み込む
+    custom_html = f"""
+    <div id="chart-wrapper" style="width: 100%; font-family: sans-serif;">
+        {fig_html}
+        <button id="dl-btn" style="
+            width: 100%; 
+            padding: 10px; 
+            margin-top: 10px; 
+            background-color: #ffffff; 
+            color: #31333F; 
+            border: 1px solid #d1d5db; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            font-size: 14px; 
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: background-color 0.2s;
+        ">
+            📸 グラフを画像で保存 (JPEG)
+        </button>
+        <script>
+            document.getElementById('dl-btn').onclick = function() {{
+                const gd = document.querySelector('.plotly-graph-div');
+                Plotly.downloadImage(gd, {{
+                    format: 'jpeg',
+                    filename: '{filename}',
+                    height: 800,
+                    width: 1200,
+                    scale: 2
+                }});
+            }};
+            // ホバー効果
+            document.getElementById('dl-btn').onmouseover = function() {{ this.style.backgroundColor = '#f9fafb'; }};
+            document.getElementById('dl-btn').onmouseout = function() {{ this.style.backgroundColor = '#ffffff'; }};
+        </script>
+    </div>
+    """
+    components.html(custom_html, height=height + 60)
 from dateutil import parser
 import time
 
@@ -802,7 +847,7 @@ with tabs[5]:
             fig.add_trace(go.Scatter(x=df_h['age'], y=df_h['totalAssets'], name=n, line=dict(color=clrs[n], width=3), customdata=df_h['age'], hovertemplate="%{customdata}歳<br>資産: %{y:,.0f} 万円<extra></extra>"))
         fig.update_layout(title="将来資産推移", xaxis_title="年齢", yaxis_title="資産額 (万円)", template="plotly_white", hovermode="x unified", xaxis=dict(hoverformat=".0f歳"))
         with st.container(border=True):
-            st.plotly_chart(fig, use_container_width=True, config=CHART_CONFIG_JPEG)
+            render_plotly_with_download(fig, "FIRE_Simulation_Results", height=420)
         
         # シェア用のサマリー作成
         normal_rep = all_res["通常"]
@@ -1120,7 +1165,7 @@ with tabs[2]:
     c1, c2 = st.columns([1, 2])
     with c1:
         with st.container(border=True):
-            st.plotly_chart(fig_fg, use_container_width=True, config=CHART_CONFIG_JPEG)
+            render_plotly_with_download(fig_fg, "Fear_And_Greed_Gauge", height=280)
             st.markdown(f'<div style="text-align:center; font-size:1.5rem; font-weight:700; color:{fg_color}; margin-top:-20px; margin-bottom:10px;">{fg_emoji} {fg_label}</div>', unsafe_allow_html=True)
     
     with c2:
@@ -1151,7 +1196,7 @@ with tabs[2]:
             
             with st.container(border=True):
                 st.markdown("##### 📈 センチメント vs 株価推移 (1年)")
-                st.plotly_chart(fig_chart, use_container_width=True, config=CHART_CONFIG_JPEG)
+                render_plotly_with_download(fig_chart, "Sentiment_History_Chart", height=320)
                 
                 st.markdown("""
                 <div style="display: flex; justify-content: center; align-items: center; gap: 16px; margin-top: 4px; padding-bottom: 8px; flex-wrap: nowrap;">
@@ -1290,7 +1335,7 @@ with tabs[6]:
             hovermode="x unified"
         )
         with st.container(border=True):
-            st.plotly_chart(fig_crash, use_container_width=True, config=CHART_CONFIG_JPEG)
+            render_plotly_with_download(fig_crash, "Crash_Test_Simulation", height=420)
         
         max_loss = tp - min_val
         max_loss_pct = (max_loss / tp) * 100 if tp > 0 else 0

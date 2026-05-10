@@ -1155,9 +1155,15 @@ with tabs[2]:
 
             fig_chart.update_layout(
                 hovermode="x unified",
-                legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+                legend=dict(
+                    orientation="h", 
+                    yanchor="bottom", y=1.02, 
+                    xanchor="center", x=0.5,
+                    font=dict(size=10), # スマホで一行に収まりやすくするため少し小さく
+                    bgcolor='rgba(0,0,0,0)'
+                ),
                 height=320,
-                margin=dict(l=0, r=0, t=20, b=0), # タイトルを外に出したのでtを縮小
+                margin=dict(l=0, r=0, t=20, b=0),
                 paper_bgcolor='rgba(0,0,0,0)',
                 plot_bgcolor='rgba(0,0,0,0)',
             )
@@ -1166,7 +1172,7 @@ with tabs[2]:
             fig_chart.update_yaxes(title_text="F&G Index", secondary_y=True, range=[0, 100], showgrid=False)
             
             with st.container(border=True):
-                st.markdown("##### 📈 センチメント vs 株価推移 (直近1年)")
+                st.markdown("##### 📈 センチメント vs 株価推移 (1年)")
                 st.plotly_chart(fig_chart, use_container_width=True, config={'displayModeBar': False})
 
     # 構成指標ミニカード（7指標・CNN準拠）

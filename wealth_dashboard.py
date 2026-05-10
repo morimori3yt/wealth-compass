@@ -24,7 +24,7 @@ CHART_CONFIG_JPEG = {
 }
 
 # ブラウザ側でダウンロードを実行するカスタム描画関数
-def render_plotly_with_download(fig, filename, height=400):
+def render_plotly_with_download(fig, filename, height=400, inside_content=""):
     import plotly.io as pio
     # PlotlyのHTMLを生成
     fig_html = pio.to_html(fig, include_plotlyjs='cdn', full_html=False, config=CHART_CONFIG_JPEG)
@@ -36,11 +36,15 @@ def render_plotly_with_download(fig, filename, height=400):
         <div style="
             border: 1px solid #d1d5db; 
             border-radius: 12px; 
-            padding: 8px; 
+            padding: 12px; 
             background-color: #ffffff;
             box-shadow: 0 1px 2px rgba(0,0,0,0.05);
         ">
             {fig_html}
+            <!-- 枠内に表示する追加コンテンツ (ラベルや凡例) -->
+            <div style="margin-top: 8px;">
+                {inside_content}
+            </div>
         </div>
         
         <!-- 枠線の外側に配置されるボタン -->
@@ -86,7 +90,7 @@ def render_plotly_with_download(fig, filename, height=400):
         </script>
     </div>
     """
-    components.html(custom_html, height=height + 100)
+    components.html(custom_html, height=height + 150) # ボタン見切れ防止のため高さを多めに確保
 from dateutil import parser
 import time
 
@@ -862,7 +866,15 @@ with tabs[5]:
         for n in show_scen:
             df_h = pd.DataFrame(all_res[n]['history'])
             fig.add_trace(go.Scatter(x=df_h['age'], y=df_h['totalAssets'], name=n, line=dict(color=clrs[n], width=3), customdata=df_h['age'], hovertemplate="%{customdata}歳<br>資産: %{y:,.0f} 万円<extra></extra>"))
-        fig.update_layout(title="将来資産推移", xaxis_title="年齢", yaxis_title="資産額 (万円)", template="plotly_white", hovermode="x unified", xaxis=dict(hoverformat=".0f歳"))
+        fig.update_layout(
+            title="将来資産推移", 
+            xaxis_title="年齢", 
+            yaxis_title="資産額 (万円)", 
+            template="plotly_white", 
+            hovermode="x unified", 
+            xaxis=dict(hoverformat=".0f歳"),
+            margin=dict(l=60, r=80, t=40, b=50) # 右凡例と下軸の見切れ防止
+        )
         render_plotly_with_download(fig, "FIRE_Simulation_Results", height=420)
         
         # シェア用のサマリー作成
@@ -1176,13 +1188,17 @@ with tabs[2]:
             ],
         }
     ))
-    fig_fg.update_layout(height=280, margin=dict(l=30, r=30, t=40, b=10), paper_bgcolor='rgba(0,0,0,0)')
+    fig_fg.update_layout(
+        height=280, 
+        margin=dict(l=40, r=40, t=50, b=20), # ゲージの見切れ防止
+        paper_bgcolor='rgba(0,0,0,0)'
+    )
     
     c1, c2 = st.columns([1, 2])
     with c1:
-        render_plotly_with_download(fig_fg, "Fear_And_Greed_Gauge", height=280)
-        st.markdown(f'<div style="text-align:center; font-size:1.5rem; font-weight:700; color:{fg_color}; margin-top:-20px; margin-bottom:10px;">{fg_emoji} {fg_label}</div>', unsafe_allow_html=True)
-        # ゲージは単体で枠を持つため、下に追加の余白
+        # 強欲ラベルを枠内コンテンツとして渡す
+        gauge_label_html = f'<div style="text-align:center; font-size:1.5rem; font-weight:700; color:{fg_color}; margin-top:-10px;">{fg_emoji} {fg_label}</div>'
+        render_plotly_with_download(fig_fg, "Fear_And_Greed_Gauge", height=280, inside_content=gauge_label_html)
         st.markdown('<div style="margin-bottom:20px;"></div>', unsafe_allow_html=True)
     
     with c2:
@@ -1203,7 +1219,7 @@ with tabs[2]:
                 hovermode="x unified",
                 showlegend=False,
                 height=320,
-                margin=dict(l=0, r=0, t=10, b=10),
+                margin=dict(l=50, r=50, t=20, b=50), # 軸の見切れ防止
                 paper_bgcolor='rgba(0,0,0,0)',
                 plot_bgcolor='rgba(0,0,0,0)',
             )
@@ -1211,24 +1227,25 @@ with tabs[2]:
             fig_chart.update_yaxes(title_text="株価騰落率 (%)", secondary_y=False, showgrid=True, gridcolor='#E2E8F0')
             fig_chart.update_yaxes(title_text="F&G Index", secondary_y=True, range=[0, 100], showgrid=False)
             
-            st.markdown("##### 📈 センチメント vs 株価推移 (1年)")
-            render_plotly_with_download(fig_chart, "Sentiment_History_Chart", height=320)
-            st.markdown("""
-            <div style="display: flex; justify-content: center; align-items: center; gap: 16px; margin-top: 4px; padding-bottom: 8px; flex-wrap: nowrap;">
-                <div style="display: flex; align-items: center; gap: 6px;">
-                    <div style="width: 14px; height: 3px; background-color: #3B82F6; border-radius: 1px;"></div>
-                    <span style="font-size: 11px; font-weight: 600; color: #64748B; white-space: nowrap;">日経平均</span>
+            # HTML凡例
+            legend_html = """
+            <div style='display: flex; justify-content: center; align-items: center; gap: 16px; margin-bottom: 4px; flex-wrap: nowrap;'>
+                <div style='display: flex; align-items: center; gap: 6px;'>
+                    <div style='width: 14px; height: 3px; background-color: #3B82F6; border-radius: 1px;'></div>
+                    <span style='font-size: 11px; font-weight: 600; color: #64748B; white-space: nowrap;'>日経平均</span>
                 </div>
-                <div style="display: flex; align-items: center; gap: 6px;">
-                    <div style="width: 14px; height: 0px; border-top: 2px dotted #94A3B8;"></div>
-                    <span style="font-size: 11px; font-weight: 600; color: #64748B; white-space: nowrap;">TOPIX</span>
+                <div style='display: flex; align-items: center; gap: 6px;'>
+                    <div style='width: 14px; height: 0px; border-top: 2px dotted #94A3B8;'></div>
+                    <span style='font-size: 11px; font-weight: 600; color: #64748B; white-space: nowrap;'>TOPIX</span>
                 </div>
-                <div style="display: flex; align-items: center; gap: 6px;">
-                    <div style="width: 14px; height: 3px; background-color: #F59E0B; border-radius: 1px;"></div>
-                    <span style="font-size: 11px; font-weight: 600; color: #64748B; white-space: nowrap;">F&G</span>
+                <div style='display: flex; align-items: center; gap: 6px;'>
+                    <div style='width: 14px; height: 3px; background-color: #F59E0B; border-radius: 1px;'></div>
+                    <span style='font-size: 11px; font-weight: 600; color: #64748B; white-space: nowrap;'>F&G</span>
                 </div>
             </div>
-            """, unsafe_allow_html=True)
+            """
+            st.markdown("##### 📈 センチメント vs 株価推移 (1年)")
+            render_plotly_with_download(fig_chart, "Sentiment_History_Chart", height=320, inside_content=legend_html)
                 
     st.markdown("#### 📊 構成指標の内訳（CNN準拠・各 14.3% の均等加重）")
     indicator_names = {

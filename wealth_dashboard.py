@@ -1067,8 +1067,7 @@ with tabs[2]:
             lqd_ret20 = lqd_c.pct_change(20) * 100
             junk_spread = hyg_ret20 - lqd_ret20
             junk_score = (50 + junk_spread * 10).clip(0, 100)
-            
-            # 3. 総合スコアの集計
+ # 3. 総合スコアの集計
             df_hist = pd.DataFrame({
                 'FG_Index': (mom_score + str_score + brd_score + pc_score + volat_score + safe_score + junk_score) / 7.0,
                 'Nikkei225': nk['Close'],
@@ -1139,12 +1138,12 @@ with tabs[2]:
             fig_chart = make_subplots(specs=[[{"secondary_y": True}]])
             
             # 株価推移 (左軸)
-            fig_chart.add_trace(go.Scatter(x=df_norm.index, y=df_norm['Nikkei225'], name="日経平均 (%)", line=dict(color='#3B82F6', width=2)), secondary_y=False)
-            fig_chart.add_trace(go.Scatter(x=df_norm.index, y=df_norm['TOPIX'], name="TOPIX (%)", line=dict(color='#94A3B8', width=1.5, dash='dot')), secondary_y=False)
+            fig_chart.add_trace(go.Scatter(x=df_norm.index, y=df_norm['Nikkei225'], name="日経 (%)", line=dict(color='#3B82F6', width=2)), secondary_y=False)
+            fig_chart.add_trace(go.Scatter(x=df_norm.index, y=df_norm['TOPIX'], name="TPX (%)", line=dict(color='#94A3B8', width=1.5, dash='dot')), secondary_y=False)
             
             # Fear & Greed (右軸)
             fig_chart.add_trace(go.Scatter(
-                x=df_norm.index, y=df_norm['FG_Index'], name="Fear & Greed",
+                x=df_norm.index, y=df_norm['FG_Index'], name="F&G",
                 fill='tozeroy', fillcolor='rgba(148, 163, 184, 0.1)',
                 line=dict(color='#F59E0B', width=2.5)
             ), secondary_y=True)
@@ -1159,8 +1158,9 @@ with tabs[2]:
                     orientation="h", 
                     yanchor="bottom", y=1.02, 
                     xanchor="center", x=0.5,
-                    font=dict(size=10), # スマホで一行に収まりやすくするため少し小さく
-                    bgcolor='rgba(0,0,0,0)'
+                    font=dict(size=12), # 名称短縮により12pxでも一行に収まるように
+                    bgcolor='rgba(0,0,0,0)',
+                    traceorder="normal"
                 ),
                 height=320,
                 margin=dict(l=0, r=0, t=20, b=0),

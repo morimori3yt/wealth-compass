@@ -898,13 +898,13 @@ with tabs[5]:
                 orientation="v",
                 yanchor="top",
                 y=0.99,
-                xanchor="right",
-                x=0.99,
+                xanchor="left",
+                x=1.02,
                 bgcolor='rgba(255,255,255,0.9)',
                 bordercolor='#d1d5db',
                 borderwidth=1
             ),
-            margin=dict(l=60, r=30, t=60, b=50)
+            margin=dict(l=60, r=100, t=60, b=50)
         )
         render_plotly_with_download(fig, "FIRE_Simulation_Results", height=420)
         

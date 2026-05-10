@@ -1147,7 +1147,7 @@ with tabs[2]:
                         <span style="font-size: 11px; font-weight: 600; color: #64748B; white-space: nowrap;">TOPIX</span>
                     </div>
                     <div style="display: flex; align-items: center; gap: 6px;">
-                        <div style="width: 12px; height: 12px; background-color: rgba(245, 158, 11, 0.15); border: 1.5px solid #F59E0B; border-radius: 3px;"></div>
+                        <div style="width: 14px; height: 3px; background-color: #F59E0B; border-radius: 1px;"></div>
                         <span style="font-size: 11px; font-weight: 600; color: #64748B; white-space: nowrap;">F&G</span>
                     </div>
                 </div>

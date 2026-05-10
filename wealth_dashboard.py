@@ -1189,8 +1189,9 @@ with tabs[2]:
     ))
     fig_fg.update_layout(
         height=280, 
-        margin=dict(l=40, r=40, t=50, b=20), # ゲージの見切れ防止
-        paper_bgcolor='rgba(0,0,0,0)'
+        margin=dict(l=40, r=40, t=50, b=20), 
+        paper_bgcolor='#ffffff',
+        plot_bgcolor='#ffffff'
     )
     
     c1, c2 = st.columns([1, 2])
@@ -1218,9 +1219,9 @@ with tabs[2]:
                 hovermode="x unified",
                 showlegend=False,
                 height=320,
-                margin=dict(l=50, r=50, t=20, b=50), # 軸の見切れ防止
-                paper_bgcolor='rgba(0,0,0,0)',
-                plot_bgcolor='rgba(0,0,0,0)',
+                margin=dict(l=50, r=50, t=20, b=50), 
+                paper_bgcolor='#ffffff',
+                plot_bgcolor='#ffffff',
             )
             fig_chart.update_xaxes(showgrid=False)
             fig_chart.update_yaxes(title_text="株価騰落率 (%)", secondary_y=False, showgrid=True, gridcolor='#E2E8F0')

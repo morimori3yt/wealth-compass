@@ -785,7 +785,7 @@ with tabs[5]:
             fig.add_trace(go.Scatter(x=df_h['age'], y=df_h['totalAssets'], name=n, line=dict(color=clrs[n], width=3), customdata=df_h['age'], hovertemplate="%{customdata}歳<br>資産: %{y:,.0f} 万円<extra></extra>"))
         fig.update_layout(title="将来資産推移", xaxis_title="年齢", yaxis_title="資産額 (万円)", template="plotly_white", hovermode="x unified", xaxis=dict(hoverformat=".0f歳"))
         with st.container(border=True):
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
         
         # シェア用のサマリー作成
         normal_rep = all_res["通常"]
@@ -1124,7 +1124,7 @@ with tabs[2]:
     col1, col2 = st.columns([1, 2])
     with col1:
         with st.container(border=True):
-            st.plotly_chart(fig_fg, use_container_width=True)
+            st.plotly_chart(fig_fg, use_container_width=True, config={'displayModeBar': False})
             st.markdown(f'<div style="text-align:center; font-size:1.5rem; font-weight:700; color:{fg_color}; margin-top:-20px; margin-bottom:10px;">{fg_emoji} {fg_label}</div>', unsafe_allow_html=True)
     
     with col2:
@@ -1165,9 +1165,9 @@ with tabs[2]:
             fig_chart.update_yaxes(title_text="株価騰落率 (%)", secondary_y=False, showgrid=True, gridcolor='#E2E8F0')
             fig_chart.update_yaxes(title_text="F&G Index", secondary_y=True, range=[0, 100], showgrid=False)
             
-            st.markdown("##### 📈 センチメント vs 株価推移 (直近1年)")
             with st.container(border=True):
-                st.plotly_chart(fig_chart, use_container_width=True)
+                st.markdown("##### 📈 センチメント vs 株価推移 (直近1年)")
+                st.plotly_chart(fig_chart, use_container_width=True, config={'displayModeBar': False})
 
     # 構成指標ミニカード（7指標・CNN準拠）
     st.markdown("#### 📊 構成指標の内訳（CNN準拠・各 14.3% の均等加重）")
@@ -1290,7 +1290,7 @@ with tabs[6]:
             hovermode="x unified"
         )
         with st.container(border=True):
-            st.plotly_chart(fig_crash, use_container_width=True)
+            st.plotly_chart(fig_crash, use_container_width=True, config={'displayModeBar': False})
         
         max_loss = tp - min_val
         max_loss_pct = (max_loss / tp) * 100 if tp > 0 else 0

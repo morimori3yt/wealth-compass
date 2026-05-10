@@ -1,12 +1,10 @@
 import streamlit as st
-import streamlit.components.v1 as components
-import feedparser
+import market_utils as mu
 import urllib.parse
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import yfinance as yf
-from simulation_logic import FIRESimulator
 import datetime
 import streamlit.components.v1 as components
 
@@ -180,40 +178,10 @@ def get_share_button_html(text, url="https://wealth-compass.streamlit.app/"):
 
 # --- 関数群 ---
 
-@st.cache_data(ttl=300)
+@st.cache_data(ttl=900)
 def get_intraday_market_data(ticker_symbol):
-    is_topix = (ticker_symbol == "^TPX")
-    if is_topix:
-        # yfinanceのTOPIXデータ配信停止問題を回避するため、連動ETFで波形を取得
-        ticker_symbol = "1306.T"
-    try:
-        ticker = yf.Ticker(ticker_symbol)
-        df = ticker.history(period="5d", interval="15m")
-        if df.empty:
-            return None, None, None
-            
-        df['date'] = df.index.date
-        latest_date = df['date'].iloc[-1]
-        
-        df_today = df[df['date'] == latest_date].copy()
-        df_prev = df[df['date'] < latest_date]
-        
-        curr_price = df_today['Close'].iloc[-1]
-        if not df_prev.empty:
-            prev_close = df_prev['Close'].iloc[-1]
-        else:
-            prev_close = df_today['Close'].iloc[0]
+    return mu.get_intraday_market_data(ticker_symbol)
 
-        if is_topix:
-            # 最新のTOPIX水準(約2750)とETF(約2900)の比率を掛けて、ダミーのTOPIX数値を合成
-            ratio = 0.95 
-            df_today['Close'] = df_today['Close'] * ratio
-            curr_price *= ratio
-            prev_close *= ratio
-            
-        return df_today, curr_price, prev_close
-    except: 
-        return None, None, None
 
 def render_market_tile(name, symbol):
     import plotly.graph_objects as go
@@ -324,6 +292,7 @@ def fetch_latest_news(region):
         encoded = urllib.parse.quote(query_str)
         rss_url = f"https://news.google.com/rss/search?q={encoded}&hl=ja&gl=JP&ceid=JP:ja"
         try:
+            import feedparser
             feed = feedparser.parse(rss_url)
             return feed.entries
         except: return []
@@ -488,6 +457,26 @@ def render_rotating_ads():
         div[data-testid="stStatusWidget"] {{display:none;}}
         #viewer-link {{display:none;}}
         </style>
+
+        <!-- SEO Meta Tags -->
+        <head>
+            <meta name="description" content="資産形成の羅針盤：日本版 Fear & Greed Index、FIREシミュレーター、不労所得メーターなど、投資家を導く無料ツール集。">
+            <meta name="keywords" content="FIRE, シミュレーター, 恐怖指数, 資産形成, 投資, 日本版 Fear and Greed Index">
+            <meta property="og:title" content="資産形成の羅針盤 | 投資家を導く無料ツール集">
+            <meta property="og:description" content="日本版 Fear & Greed Index や FIREシミュレーターなど、資産形成を支援する無料ツール群。">
+            <meta property="og:image" content="https://raw.githubusercontent.com/morimori3yt/wealth-compass/main/wealth_logo.jpg">
+            <meta property="og:type" content="website">
+            
+            <!-- Google Analytics (Placeholder: Replace G-XXXXXXXXXX with your actual ID) -->
+            <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+            <script>
+                window.dataLayer = window.dataLayer || [];
+                function gtag(){{dataLayer.push(arguments);}}
+                gtag('js', new Date());
+                gtag('config', 'G-XXXXXXXXXX');
+            </script>
+        </head>
+
         <div class="logo-container">
             <img src="https://raw.githubusercontent.com/morimori3yt/wealth-compass/main/wealth_logo.jpg" alt="資産形成の羅針盤">
         </div>
@@ -892,6 +881,7 @@ with tabs[5]:
         show_scen = st.multiselect("シナリオ表示", ["通常", "強気", "弱気"], default=["通常", "強気", "弱気"])
         st.divider()
         if st.button("✨ 最短FIRE年齢を計算する", use_container_width=True):
+            from simulation_logic import FIRESimulator
             sim_rev = FIRESimulator()
             st.session_state['rev_results'] = sim_rev.find_all_fire_ages({'currentAge': age, 'currentAssets': total_curr, 'nisaAssets': c_nisa, 'nisaLimitRemaining': nisa_rem, 'taxRate': tax_rate, 'monthlyInvestment': m_inv, 'expectedReturnPre': r_pre, 'expectedReturnPost': r_post, 'expectedReturnPreBull': r_pre + r_bull, 'expectedReturnPostBull': r_post + r_bull, 'expectedReturnPreBear': max(0, r_pre - r_bear), 'expectedReturnPostBear': max(0, r_post - r_bear), 'livingExpense': l_exp, 'inflationRate': inf, 'pensionAmount': p_val, 'pensionAge': p_age, 'retirementAllowance': ret_al})
         if st.session_state['rev_results']:
@@ -900,6 +890,7 @@ with tabs[5]:
             if res['通常'] and st.button("通常結果を適用"): st.session_state['fire_age_val'] = res['通常']; st.rerun()
 
     with f_out:
+        from simulation_logic import FIRESimulator
         sim = FIRESimulator()
         all_res = sim.calculate({'currentAge': age, 'currentAssets': total_curr, 'nisaAssets': c_nisa, 'nisaLimitRemaining': nisa_rem, 'taxRate': tax_rate, 'monthlyInvestment': m_inv, 'expectedReturnPre': r_pre, 'expectedReturnPost': r_post, 'expectedReturnPreBull': r_pre + r_bull, 'expectedReturnPostBull': r_post + r_bull, 'expectedReturnPreBear': max(0, r_pre - r_bear), 'expectedReturnPostBear': max(0, r_post - r_bear), 'fireAge': f_age, 'livingExpense': l_exp, 'inflationRate': inf, 'pensionAmount': p_val, 'pensionAge': p_age, 'retirementAllowance': ret_al})
         fig = go.Figure()
@@ -951,6 +942,48 @@ with tabs[5]:
             status_text = "✅ 100歳まで安泰" if not r['exhaustionAge'] else f"⚠️ {r['exhaustionAge']}歳で枯渇"
             with rep_cols[idx]:
                 st.markdown(f'<div class="fire-report-card {css_class}"><div class="fire-report-title" style="color:{clrs[n]};">{n}シナリオ</div><div class="fire-report-status">{status_text}</div><div class="fire-report-amount">100歳時: {r["finalAssets"]:,.0f}万円</div></div>', unsafe_allow_html=True)
+
+        st.divider()
+        st.subheader("📊 日本の平均世帯と比較（金融広報中央委員会 令和5年調査）")
+        with st.expander("📝 診断条件の詳細設定", expanded=True):
+            ec1, ec2 = st.columns(2)
+            with ec1:
+                household_type = st.radio("世帯タイプ", ["単身世帯", "二人以上世帯"], horizontal=True, key="comp_h_type")
+            with ec2:
+                stat_type = st.radio("比較指標", ["平均値", "中央値"], horizontal=True, key="comp_s_type")
+        
+        # 比較データの取得
+        age_group = (age // 10) * 10
+        if age_group < 20: age_group = 20
+        if age_group > 70: age_group = 70
+        comp_value = mu.STATS_DATA[household_type][stat_type][age_group]
+        
+        c_diag1, c_diag2 = st.columns([1, 1])
+        with c_diag1:
+            diff = total_curr - comp_value
+            if diff >= 0:
+                st.success(f"あなたは同世代の{stat_type}より **{diff:,.0f}万円** 多く資産を持っています！")
+            else:
+                st.warning(f"あなたは同世代の{stat_type}まで あと **{abs(diff):,.0f}万円** です。")
+            st.info("💡 **統計豆知識**: \n「平均値」は一部の超富裕層によって引き上げられやすいため、より一般的な実感に近いのは「中央値」と言われています。")
+        
+        with c_diag2:
+            fig_comp = go.Figure()
+            fig_comp.add_trace(go.Bar(
+                x=["あなた", f"{age_group}代 {stat_type}"],
+                y=[total_curr, comp_value],
+                marker_color=["#3B82F6", "#94A3B8"],
+                text=[f"{total_curr:,.0f}万", f"{comp_value:,.0f}万"],
+                textposition='auto',
+            ))
+            fig_comp.update_layout(
+                title=f"資産額の比較 (単位: 万円)",
+                template="plotly_white",
+                height=300,
+                margin=dict(l=20, r=20, t=40, b=20)
+            )
+            st.plotly_chart(fig_comp, use_container_width=True)
+
 
 # --- Tab 5: 不労所得リアルタイムメーター ---
 with tabs[4]:
@@ -1053,85 +1086,7 @@ with tabs[2]:
     
     @st.cache_data(ttl=600)
     def calc_fear_greed():
-        w = 1.0 / 7.0  # CNN準拠: 均等加重
-        scores = {}
-        
-        # ① 株価モメンタム: 日経平均 vs 125日移動平均 (CNN: S&P500 vs 125-day MA)
-        try:
-            nk = yf.Ticker("^N225").history(period="160d")
-            ma125 = nk['Close'].rolling(125).mean().iloc[-1]
-            curr = nk['Close'].iloc[-1]
-            pct_above = ((curr - ma125) / ma125) * 100
-            scores['MOMENTUM'] = {'value': f"{pct_above:+.2f}%", 'score': max(0, min(100, 50 + pct_above * 4)), 'weight': w}
-        except:
-            scores['MOMENTUM'] = {'value': 'N/A', 'score': 50, 'weight': w}
-        
-        # ② 株価の強さ: 大型株 vs 小型株の相対パフォーマンス20日 (CNN: 52週新高値/新安値比率の代替)
-        try:
-            topix = yf.Ticker("1306.T").history(period="30d")
-            mothers = yf.Ticker("2516.T").history(period="30d")
-            topix_ret = (topix['Close'].iloc[-1] / topix['Close'].iloc[-20] - 1) * 100
-            mothers_ret = (mothers['Close'].iloc[-1] / mothers['Close'].iloc[-20] - 1) * 100
-            breadth = topix_ret - mothers_ret
-            scores['STRENGTH'] = {'value': f"{breadth:+.2f}%", 'score': max(0, min(100, 50 + breadth * 5)), 'weight': w}
-        except:
-            scores['STRENGTH'] = {'value': 'N/A', 'score': 50, 'weight': w}
-        
-        # ③ 市場の広がり: 日経ETF出来高 vs 50日平均出来高 (CNN: McClellan Volume代替)
-        try:
-            nk_vol = yf.Ticker("1321.T").history(period="70d")
-            avg_vol = nk_vol['Volume'].rolling(50).mean().iloc[-1]
-            curr_vol = nk_vol['Volume'].iloc[-5:].mean()
-            vol_ratio = (curr_vol / avg_vol - 1) * 100 if avg_vol > 0 else 0
-            scores['BREADTH'] = {'value': f"{vol_ratio:+.1f}%", 'score': max(0, min(100, 50 + vol_ratio * 0.5)), 'weight': w}
-        except:
-            scores['BREADTH'] = {'value': 'N/A', 'score': 50, 'weight': w}
-        
-        # ④ プット/コール比率代替: VIX短期トレンド 5日MA vs 20日MA (CNN: Put/Call Ratio代替)
-        try:
-            vix_pc = yf.Ticker("^VIX").history(period="30d")
-            vix_ma5 = vix_pc['Close'].rolling(5).mean().iloc[-1]
-            vix_ma20 = vix_pc['Close'].rolling(20).mean().iloc[-1]
-            vix_trend = ((vix_ma5 - vix_ma20) / vix_ma20) * 100
-            scores['PUTCALL'] = {'value': f"{vix_trend:+.2f}%", 'score': max(0, min(100, 50 - vix_trend * 3)), 'weight': w}
-        except:
-            scores['PUTCALL'] = {'value': 'N/A', 'score': 50, 'weight': w}
-        
-        # ⑤ 市場のボラティリティ: VIX vs 50日移動平均 (CNN: VIX vs 50-day MA)
-        try:
-            vix_data = yf.Ticker("^VIX").history(period="70d")
-            vix_curr = vix_data['Close'].iloc[-1]
-            vix_ma50 = vix_data['Close'].rolling(50).mean().iloc[-1]
-            vix_diff = ((vix_curr - vix_ma50) / vix_ma50) * 100
-            scores['VOLATILITY'] = {'value': f"VIX {vix_curr:.1f}", 'score': max(0, min(100, 50 - vix_diff * 2)), 'weight': w}
-        except:
-            scores['VOLATILITY'] = {'value': 'N/A', 'score': 50, 'weight': w}
-        
-        # ⑥ 安全資産への逃避: 株式 vs 債券の20日リターン比較 (CNN: Stock vs Bond returns)
-        try:
-            stk = yf.Ticker("^N225").history(period="30d")
-            bnd = yf.Ticker("TLT").history(period="30d")
-            stk_ret = (stk['Close'].iloc[-1] / stk['Close'].iloc[-20] - 1) * 100
-            bnd_ret = (bnd['Close'].iloc[-1] / bnd['Close'].iloc[-20] - 1) * 100
-            spread = stk_ret - bnd_ret
-            scores['SAFEHAVEN'] = {'value': f"{spread:+.2f}%", 'score': max(0, min(100, 50 + spread * 4)), 'weight': w}
-        except:
-            scores['SAFEHAVEN'] = {'value': 'N/A', 'score': 50, 'weight': w}
-        
-        # ⑦ ジャンク債需要: HYG vs LQD の20日リターン比較 (CNN: Junk Bond Demand)
-        try:
-            hyg = yf.Ticker("HYG").history(period="30d")
-            lqd = yf.Ticker("LQD").history(period="30d")
-            hyg_ret = (hyg['Close'].iloc[-1] / hyg['Close'].iloc[-20] - 1) * 100
-            lqd_ret = (lqd['Close'].iloc[-1] / lqd['Close'].iloc[-20] - 1) * 100
-            junk_spread = hyg_ret - lqd_ret
-            scores['JUNKBOND'] = {'value': f"{junk_spread:+.2f}%", 'score': max(0, min(100, 50 + junk_spread * 10)), 'weight': w}
-        except:
-            scores['JUNKBOND'] = {'value': 'N/A', 'score': 50, 'weight': w}
-        
-        # 均等加重平均スコア
-        total_score = sum(s['score'] * s['weight'] for s in scores.values())
-        return round(total_score, 1), scores
+        return mu.calc_fear_greed_score()
 
     @st.cache_data(ttl=3600)
     def calc_fear_greed_history():

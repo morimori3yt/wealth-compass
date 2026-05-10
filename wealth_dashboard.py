@@ -158,7 +158,8 @@ def render_market_tile(name, symbol):
         padding = (max_y - min_y) * 0.25 if max_y != min_y else curr * 0.001
         
         fig.update_layout(
-            margin=dict(l=5, r=40, t=5, b=5), xaxis_visible=False, 
+            margin=dict(l=5, r=40, t=10, b=10),
+            xaxis_visible=True,
             yaxis_visible=True,
             yaxis=dict(
                 range=[min_y - padding, max_y + padding],
@@ -172,6 +173,16 @@ def render_market_tile(name, symbol):
             height=150,
             paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', showlegend=False, 
             hovermode="x unified"
+        )
+        fig.update_xaxes(
+            showticklabels=False,
+            showgrid=False,
+            showline=False,
+            showspikes=True,
+            spikecolor="gray",
+            spikesnap="cursor",
+            spikemode="across",
+            spikedash="dash"
         )
         st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
 

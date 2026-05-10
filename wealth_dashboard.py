@@ -790,10 +790,15 @@ with tabs[0]:
         st.info("サイドバーから表示したい資産を選択してください。")
     else:
         # 4列のグリッド
-        cols = st.columns(4)
-        for idx, name in enumerate(ordered_assets):
-            with cols[idx % 4]:
-                render_market_tile(name, ASSET_MASTER[name])
+        # 行ベースの描画 (スマホでの順序崩れを防止)
+        cols_per_row = 4
+        for i in range(0, len(ordered_assets), cols_per_row):
+            m_cols = st.columns(cols_per_row)
+            for j in range(cols_per_row):
+                if i + j < len(ordered_assets):
+                    name = ordered_assets[i + j]
+                    with m_cols[j]:
+                        render_market_tile(name, ASSET_MASTER[name])
 
 # --- Tab 2: ニュース ---
 with tabs[1]:

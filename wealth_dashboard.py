@@ -1099,7 +1099,7 @@ with tabs[2]:
             hyg = get_safe_data("HYG")
             lqd = get_safe_data("LQD")
 
-            if any(x is None for x in [nk, tp_stable, mo_etf, nk_vol, vix, tlt, hyg, lqd]):
+            if any(x is None for x in [nk, tp_stable, mo_etf, nk_vol, vix, jgb, hyg, lqd]):
                 return None
 
             idx = nk.index

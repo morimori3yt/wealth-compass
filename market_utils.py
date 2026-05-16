@@ -104,10 +104,10 @@ def calc_fear_greed_score():
         scores['VOLATILITY'] = {'score': max(0, min(100, 50 - vix_diff * 2)), 'value': f"VIX {vix_curr:.1f}"}
     except: scores['VOLATILITY'] = {'score': 50, 'value': 'N/A'}
     
-    # ⑥ 安全資産への逃避
+    # ⑥ 安全資産への逃避 (日経平均 vs 日本国債)
     try:
         stk = yf.Ticker("^N225").history(period="30d")
-        bnd = yf.Ticker("TLT").history(period="30d")
+        bnd = yf.Ticker("2561.T").history(period="30d") # iShares Core 日本国債 ETF
         stk_ret = (stk['Close'].iloc[-1] / stk['Close'].iloc[-20] - 1) * 100
         bnd_ret = (bnd['Close'].iloc[-1] / bnd['Close'].iloc[-20] - 1) * 100
         safe_haven = stk_ret - bnd_ret

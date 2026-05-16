@@ -1095,7 +1095,7 @@ with tabs[2]:
             mo_etf = get_safe_data("2516.T")
             nk_vol = get_safe_data("1321.T")
             vix = get_safe_data("^VIX")
-            tlt = get_safe_data("TLT")
+            jgb = get_safe_data("2561.T") # iShares Core 日本国債 ETF
             hyg = get_safe_data("HYG")
             lqd = get_safe_data("LQD")
 
@@ -1138,10 +1138,10 @@ with tabs[2]:
             vix_diff = ((vix_c - vix50ma) / vix50ma) * 100
             volat_score = (50 - vix_diff * 2).clip(0, 100)
             
-            # ⑥ 安全資産逃避
-            tlt_c = align(tlt['Close'])
-            tlt_ret20 = tlt_c.pct_change(20) * 100
-            safe_spread = nk['Close'].pct_change(20)*100 - tlt_ret20
+            # ⑥ 安全資産逃避 (日経平均 vs 日本国債)
+            jgb_c = align(jgb['Close'])
+            jgb_ret20 = jgb_c.pct_change(20) * 100
+            safe_spread = nk['Close'].pct_change(20)*100 - jgb_ret20
             safe_score = (50 + safe_spread * 4).clip(0, 100)
             
             # ⑦ ジャンク債需要
@@ -1254,7 +1254,7 @@ with tabs[2]:
     }
     indicator_desc = {
         'MOMENTUM': '日経 vs 125日MA', 'STRENGTH': '大型株 vs 小型株', 'BREADTH': '出来高 vs 50日平均',
-        'PUTCALL': 'VIX 5日MA vs 20日MA', 'VOLATILITY': 'VIX vs 50日MA', 'SAFEHAVEN': '株式 vs 債券リターン', 'JUNKBOND': 'HYG vs LQD リターン'
+        'PUTCALL': 'VIX 5日MA vs 20日MA', 'VOLATILITY': 'VIX vs 50日MA', 'SAFEHAVEN': '株式 vs 日本国債リターン', 'JUNKBOND': 'HYG vs LQD リターン'
     }
     fg_cols_top = st.columns(4)
     fg_cols_bot = st.columns([1,1,1,1])

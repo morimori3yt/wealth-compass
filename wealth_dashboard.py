@@ -897,6 +897,9 @@ with tabs[5]:
 
         st.divider()
         if st.button("✨ 最短FIRE年齢を計算する", use_container_width=True):
+            import sys, importlib
+            if 'simulation_logic' in sys.modules:
+                importlib.reload(sys.modules['simulation_logic'])
             from simulation_logic import FIRESimulator
             sim_rev = FIRESimulator()
             st.session_state['rev_results'] = sim_rev.find_all_fire_ages({
@@ -914,6 +917,9 @@ with tabs[5]:
             if res['通常'] and st.button("通常結果を適用"): st.session_state['fire_age_val'] = res['通常']; st.rerun()
 
     with f_out:
+        import sys, importlib
+        if 'simulation_logic' in sys.modules:
+            importlib.reload(sys.modules['simulation_logic'])
         from simulation_logic import FIRESimulator
         sim = FIRESimulator()
         all_res = sim.calculate({

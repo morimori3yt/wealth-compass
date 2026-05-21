@@ -37,6 +37,11 @@ class FIRESimulator:
         pension_age = params.get('pensionAge', 65)
         pension_amount = params.get('pensionAmount', 15)
         retirement_allowance = params.get('retirementAllowance', 0)
+        
+        # サイドFIRE用パラメータ
+        use_side_fire = params.get('useSideFire', False)
+        side_income = params.get('sideIncome', 0.0)
+        side_income_age = params.get('sideIncomeAge', 65)
 
         history = []
         regular_assets = current_assets - nisa_assets
@@ -78,6 +83,8 @@ class FIRESimulator:
                 regular_assets += invest_amount
             else:
                 withdraw_amount = current_living_expense
+                if use_side_fire and current_year < side_income_age:
+                    withdraw_amount -= (side_income / 12)
                 if current_year >= pension_age: withdraw_amount -= pension_amount
                 if withdraw_amount > 0:
                     if regular_assets >= withdraw_amount: regular_assets -= withdraw_amount

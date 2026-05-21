@@ -872,11 +872,30 @@ with tabs[5]:
         l_exp = st.number_input("生活費 (月額/万円)", 0.0, 200.0, 25.0)
         inf = st.number_input("想定インフレ率 (%)", 0.0, 10.0, 1.0)
         show_scen = st.multiselect("シナリオ表示", ["通常", "強気", "弱気"], default=["通常", "強気", "弱気"])
+        
+        # サイドFIREの設定
+        st.markdown("**💡 サイドFIRE（リタイア後のプチ労働）**")
+        use_side_fire = st.checkbox("サイドFIREをシミュレーションする", value=False)
+        if use_side_fire:
+            side_income = st.number_input("FIRE後の年間労働収入 (万円)", 0.0, 1000.0, 120.0, step=10.0)
+            side_income_age = st.number_input("労働を続ける年齢の上限 (歳)", 18, 100, 65)
+        else:
+            side_income = 0.0
+            side_income_age = 100
+
         st.divider()
         if st.button("✨ 最短FIRE年齢を計算する", use_container_width=True):
             from simulation_logic import FIRESimulator
             sim_rev = FIRESimulator()
-            st.session_state['rev_results'] = sim_rev.find_all_fire_ages({'currentAge': age, 'currentAssets': total_curr, 'nisaAssets': c_nisa, 'nisaLimitRemaining': nisa_rem, 'taxRate': tax_rate, 'monthlyInvestment': m_inv, 'expectedReturnPre': r_pre, 'expectedReturnPost': r_post, 'expectedReturnPreBull': r_pre + r_bull, 'expectedReturnPostBull': r_post + r_bull, 'expectedReturnPreBear': max(0, r_pre - r_bear), 'expectedReturnPostBear': max(0, r_post - r_bear), 'livingExpense': l_exp, 'inflationRate': inf, 'pensionAmount': p_val, 'pensionAge': p_age, 'retirementAllowance': ret_al})
+            st.session_state['rev_results'] = sim_rev.find_all_fire_ages({
+                'currentAge': age, 'currentAssets': total_curr, 'nisaAssets': c_nisa, 'nisaLimitRemaining': nisa_rem, 
+                'taxRate': tax_rate, 'monthlyInvestment': m_inv, 'expectedReturnPre': r_pre, 'expectedReturnPost': r_post, 
+                'expectedReturnPreBull': r_pre + r_bull, 'expectedReturnPostBull': r_post + r_bull, 
+                'expectedReturnPreBear': max(0, r_pre - r_bear), 'expectedReturnPostBear': max(0, r_post - r_bear), 
+                'livingExpense': l_exp, 'inflationRate': inf, 'pensionAmount': p_val, 'pensionAge': p_age, 
+                'retirementAllowance': ret_al,
+                'useSideFire': use_side_fire, 'sideIncome': side_income, 'sideIncomeAge': side_income_age
+            })
         if st.session_state['rev_results']:
             res = st.session_state['rev_results']
             st.markdown(f'<div class="rev-panel"><div style="font-weight:700; margin-bottom:8px; border-bottom:1px solid #475569; font-size:1.1rem;">最短FIRE可能年齢</div><div style="color:#10B981;">🚀 強気: <b>{res["強気"] if res["強気"] else "不可"}歳</b></div><div style="color:#3B82F6;">📊 通常: <b>{res["通常"] if res["通常"] else "不可"}歳</b></div><div style="color:#EF4444;">⚠️ 弱気: <b>{res["弱気"] if res["弱気"] else "不可"}歳</b></div></div>', unsafe_allow_html=True)
@@ -885,7 +904,15 @@ with tabs[5]:
     with f_out:
         from simulation_logic import FIRESimulator
         sim = FIRESimulator()
-        all_res = sim.calculate({'currentAge': age, 'currentAssets': total_curr, 'nisaAssets': c_nisa, 'nisaLimitRemaining': nisa_rem, 'taxRate': tax_rate, 'monthlyInvestment': m_inv, 'expectedReturnPre': r_pre, 'expectedReturnPost': r_post, 'expectedReturnPreBull': r_pre + r_bull, 'expectedReturnPostBull': r_post + r_bull, 'expectedReturnPreBear': max(0, r_pre - r_bear), 'expectedReturnPostBear': max(0, r_post - r_bear), 'fireAge': f_age, 'livingExpense': l_exp, 'inflationRate': inf, 'pensionAmount': p_val, 'pensionAge': p_age, 'retirementAllowance': ret_al})
+        all_res = sim.calculate({
+            'currentAge': age, 'currentAssets': total_curr, 'nisaAssets': c_nisa, 'nisaLimitRemaining': nisa_rem, 
+            'taxRate': tax_rate, 'monthlyInvestment': m_inv, 'expectedReturnPre': r_pre, 'expectedReturnPost': r_post, 
+            'expectedReturnPreBull': r_pre + r_bull, 'expectedReturnPostBull': r_post + r_bull, 
+            'expectedReturnPreBear': max(0, r_pre - r_bear), 'expectedReturnPostBear': max(0, r_post - r_bear), 
+            'fireAge': f_age, 'livingExpense': l_exp, 'inflationRate': inf, 'pensionAmount': p_val, 'pensionAge': p_age, 
+            'retirementAllowance': ret_al,
+            'useSideFire': use_side_fire, 'sideIncome': side_income, 'sideIncomeAge': side_income_age
+        })
         fig = go.Figure()
         clrs = {"通常": "#3B82F6", "強気": "#10B981", "弱気": "#EF4444"}
         for n in show_scen:

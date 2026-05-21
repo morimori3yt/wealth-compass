@@ -883,10 +883,14 @@ with tabs[5]:
         
         # サイドFIREの設定
         st.markdown("**💡 サイドFIRE（リタイア後のプチ労働）**")
-        use_side_fire = st.checkbox("サイドFIREをシミュレーションする", value=False)
+        
+        def on_side_fire_change():
+            st.session_state['rev_results'] = None
+
+        use_side_fire = st.checkbox("サイドFIREをシミュレーションする", value=False, key="use_side_fire_val", on_change=on_side_fire_change)
         if use_side_fire:
-            side_income = st.number_input("FIRE後の年間労働収入 (万円)", 0.0, 1000.0, 120.0, step=10.0)
-            side_income_age = st.number_input("労働を続ける年齢の上限 (歳)", 18, 100, 65)
+            side_income = st.number_input("FIRE後の年間労働収入 (万円) ※月10万円なら120と入力", 0.0, 1000.0, 120.0, step=10.0, key="side_income_val", on_change=on_side_fire_change)
+            side_income_age = st.number_input("労働を続ける年齢の上限 (歳)", 18, 100, 65, key="side_income_age_val", on_change=on_side_fire_change)
         else:
             side_income = 0.0
             side_income_age = 100

@@ -1,4 +1,12 @@
 import streamlit as st
+import sys
+import os
+
+# deploy_filesフォルダ内のモジュールを最優先でロードするように設定
+deploy_dir = os.path.dirname(os.path.abspath(__file__))
+if deploy_dir not in sys.path:
+    sys.path.insert(0, deploy_dir)
+
 import market_utils as mu
 import urllib.parse
 import pandas as pd

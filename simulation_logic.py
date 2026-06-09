@@ -50,6 +50,7 @@ class FIRESimulator:
         remaining_nisa_limit = nisa_limit_remaining
         current_living_expense = living_expense
         exhaustion_age = None
+        total_withdrawal = 0.0
 
         def get_monthly_rate(annual_rate):
             if annual_rate <= 0: return 0.0
@@ -87,6 +88,8 @@ class FIRESimulator:
                     withdraw_amount -= (side_income / 12)
                 if current_year >= pension_age: withdraw_amount -= pension_amount
                 if withdraw_amount > 0:
+                    actual_withdrawal = min(withdraw_amount, regular_assets + current_nisa_assets)
+                    total_withdrawal += actual_withdrawal
                     if regular_assets >= withdraw_amount: regular_assets -= withdraw_amount
                     else:
                         remaining = withdraw_amount - regular_assets
@@ -96,7 +99,7 @@ class FIRESimulator:
             current_living_expense *= (1 + monthly_inflation_rate)
             total_assets = current_nisa_assets + regular_assets
 
-        return {'history': history, 'exhaustionAge': exhaustion_age, 'finalAssets': round(max(0.0, total_assets), 2)}
+        return {'history': history, 'exhaustionAge': exhaustion_age, 'finalAssets': round(max(0.0, total_assets), 2), 'totalWithdrawal': round(total_withdrawal, 2)}
 
     def find_all_fire_ages(self, params):
         """

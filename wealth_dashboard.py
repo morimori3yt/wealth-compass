@@ -979,7 +979,7 @@ with tabs[5]:
             css_class = scen_css.get(n, "fire-report-normal")
             status_text = "✅ 100歳まで安泰" if not r['exhaustionAge'] else f"⚠️ {r['exhaustionAge']}歳で枯渇"
             with rep_cols[idx]:
-                st.markdown(f'<div class="fire-report-card {css_class}"><div class="fire-report-title" style="color:{clrs[n]};">{n}シナリオ</div><div class="fire-report-status">{status_text}</div><div class="fire-report-amount">100歳時: {r["finalAssets"]:,.0f}万円</div></div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="fire-report-card {css_class}"><div class="fire-report-title" style="color:{clrs[n]};">{n}シナリオ</div><div class="fire-report-status">{status_text}</div><div class="fire-report-amount">100歳時: {r["finalAssets"]:,.0f}万円</div><div class="fire-report-amount" style="font-size: 0.9em; margin-top: 4px; color: #64748b;">累計取崩額: {r.get("totalWithdrawal", 0):,.0f}万円</div></div>', unsafe_allow_html=True)
 
         st.divider()
         st.subheader("📊 日本の平均世帯と比較（金融広報中央委員会 令和5年調査）")
